@@ -1,0 +1,55 @@
+Create a premium, production-quality Lottie animation for a mobile app login screen.
+
+App Context:
+A modern real estate / rental app (similar to Airbnb or NoBroker).
+Users log in using OTP verification via phone number.
+
+Scene Composition:
+- A clean, minimal human character holding a smartphone
+- The phone displays OTP verification UI (4–6 digit input fields)
+- Subtle UI elements floating around:
+  • house icon
+  • location pin
+  • apartment/building card
+  • key symbol (home access)
+
+Animation Behavior:
+- Phone emits a soft glow indicating OTP received
+- OTP input fields animate (pulse or fill effect)
+- Floating elements move slowly with smooth parallax motion
+- Character has slight movement (breathing / hand motion)
+- Everything loops seamlessly
+
+Design Style:
+- Premium fintech-style illustration (NOT cartoonish)
+- Inspired by Airbnb, Stripe, Zomato UI illustrations
+- Clean vector shapes, no heavy outlines
+- Balanced composition, centered focus
+
+Color System:
+- Primary gradient: purple → blue → teal
+- Soft lighting and glow effects
+- Minimal color palette (avoid too many colors)
+- Subtle shadows for depth
+
+Motion Quality:
+- Smooth easing (no linear movement)
+- Professional micro-interactions
+- No jerky or exaggerated animation
+- Duration: 3–5 seconds loop
+
+Technical Requirements:
+- Lottie JSON format
+- Transparent background
+- Optimized for mobile (lightweight)
+- Aspect ratio: 1:1
+- High visual clarity at small sizes
+
+STRICT RULES:
+- Do NOT use cartoon or childish style
+- Do NOT overcrowd the scene
+- Do NOT use bright random colors
+- Focus on premium, clean, modern product feel
+
+Goal:
+The animation should look like it belongs in a high-end startup app and enhance user trust during login.

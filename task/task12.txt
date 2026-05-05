@@ -1,0 +1,41 @@
+Create a high-quality Lottie animation for a mobile app login screen.
+
+Theme:
+Real estate / rental app (UrbanEasy style)
+
+Scene:
+A modern young person holding a smartphone.
+The phone shows OTP verification (one-time password).
+Soft UI elements float around:
+- house icon
+- location pin
+- keys
+- apartment/building cards
+
+Style:
+- Minimal flat illustration (not cartoonish)
+- Slightly realistic proportions
+- Premium fintech-style UI
+- Smooth, clean animation
+- Soft rounded shapes
+
+Colors:
+- Gradient: purple → blue → teal
+- Light background elements
+- Subtle shadows and glow
+
+Motion:
+- Smooth looping animation
+- Phone receives OTP (light pulse or glow)
+- Floating icons gently move
+- Subtle parallax effect
+
+Mood:
+Secure, modern, trustworthy, easy
+
+Technical:
+- Loop animation
+- Duration: 3–5 seconds
+- Transparent background
+- Square format (1:1)
+- Optimized for mobile app (lightweight JSON)

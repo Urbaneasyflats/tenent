@@ -1,0 +1,135 @@
+You are a senior Flutter UI engineer.
+
+Your task is to recreate the EXACT mobile UI shown in the attached image.
+
+The image is the **source of truth**. Do not redesign, simplify, or change layout.
+
+---
+
+## 🔴 GOAL
+
+* Pixel-perfect UI matching the provided screenshot
+* Clean, production-ready Flutter code
+* Modern, premium design (industry standard like Airbnb / PhonePe)
+
+---
+
+## 🔹 SCREEN: LOGIN (Tenant / Resident)
+
+### 🧱 LAYOUT STRUCTURE
+
+1. Top App Bar:
+
+   * Left: Back arrow
+   * Title: "Sign In"
+
+2. Illustration Section (IMPORTANT):
+
+   * Add a **modern animated-style illustration** above "Tenant / Resident"
+   * Style: soft blue theme, person + building (like fintech apps)
+   * Should feel premium and friendly
+
+3. Title Section:
+
+   * Title: "Tenant / Resident" (bold, large)
+   * Subtitle:
+     "Sign in to view your bills, announcements, contracts, and support."
+   * Center aligned
+
+4. OTP Card Section:
+
+   * Rounded container (border radius 20)
+   * Light background (#FFFFFF)
+   * Soft shadow
+
+   Inside:
+
+   * Title: "Continue with OTP"
+   * Subtitle text
+
+   Phone Input:
+
+   * Prefix: +91 dropdown
+   * Icon: phone
+   * Rounded input field (height ~55)
+
+   Button:
+
+   * "Request OTP"
+   * Full width
+   * Gradient (blue → dark blue)
+   * Rounded (radius 14–16)
+
+---
+
+## 🔹 REMOVE THESE (IMPORTANT)
+
+* ❌ Remove "Continue with Google"
+* ❌ Remove "OR" divider
+* ❌ No extra buttons
+
+---
+
+## 🔹 FOOTER
+
+* Small text:
+  "By continuing, you agree to our Terms of Service and Privacy Policy"
+* Center aligned
+* Highlight links in blue
+
+---
+
+## 🎨 DESIGN SPECIFICATIONS
+
+### Colors:
+
+* Primary: Blue gradient (#3A6FE8 → #1C3FAA)
+* Background: #F7F8FA
+* Text: #1C1C1E
+* Secondary text: #6B7280
+
+### Spacing:
+
+* Use 8px spacing system
+* Maintain consistent padding (16–20)
+
+### Typography:
+
+* Title: 22–26px bold
+* Subtitle: 14–16px
+* Button text: 16px medium
+
+### Shadows:
+
+* Very soft (blur 10–15, opacity 0.05–0.08)
+
+---
+
+## ⚙️ TECHNICAL REQUIREMENTS
+
+* Use Flutter (Dart)
+* Create reusable widgets:
+
+  * OTPCard
+  * PhoneInput
+  * GradientButton
+* Use responsive layout
+* Avoid fixed heights where possible
+* Use clean structure (no deep nesting)
+
+---
+
+## ✅ VALIDATION
+
+* UI must visually match the image exactly
+* Spacing, alignment, and hierarchy must match
+* No extra whitespace
+* No missing elements
+
+---
+
+## 📦 OUTPUT
+
+* Full Flutter screen code
+* Well-structured and readable
+* Ready to use in production

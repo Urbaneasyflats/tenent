@@ -1,0 +1,54 @@
+Create a modern mobile app UI screen for a real estate / rental app.
+
+IMPORTANT:
+Recreate the exact layout shown below:
+- Top header with location (Madhapur, Hyderabad)
+- Login button on right
+- Search bar below header
+- Sections: "PG (Paying Guest)" and "Villa"
+- Horizontal property cards with images
+- Buttons: "Details" and "Enquire Now"
+- Status badge (Sold out)
+- Distance and category tags on images
+
+STRICT COLOR RULE:
+DO NOT use red or any red shades.
+
+Use ONLY this color palette:
+- Primary: #6C5CE7 (Purple)
+- Secondary: #A29BFE (Light Purple)
+- Accent: #00B894 (Teal Green)
+- Background: #F8F9FB
+- Card Background: #FFFFFF
+- Text Primary: #1F2937
+- Text Secondary: #6B7280
+- Border: #E5E7EB
+
+UI Styling:
+- Clean, modern, flat design
+- Rounded corners (20px radius)
+- Soft shadows for cards
+- Smooth spacing and padding
+- Minimal and premium look (startup style)
+
+Elements Styling:
+- Replace red login button → purple gradient
+- Replace Enquire Now button → gradient (#6C5CE7 → #A29BFE)
+- Replace "Sold out" → neutral gray badge (#E5E7EB with dark text)
+- Tags (Mens PG, distance) → white glass effect with blur
+- Icons → use purple or teal only
+
+Layout Details:
+- Property image with overlay tags (distance, type, price)
+- Title below image (e.g., Ramu mens PG)
+- Subtitle (Mens PG • Deposit Rs 0)
+- Buttons aligned horizontally
+- Clean card spacing
+
+Output:
+- High-quality mobile UI mockup
+- Same structure as reference
+- Professional app design
+- No extra colors outside palette
+
+STRICT COLOR PALETTE. DO NOT INTRODUCE NEW COLORS.

@@ -1,0 +1,171 @@
+Fix the UI layout issues in my Flutter mobile app home screen to match a clean, modern design.
+
+### 🔴 Current Problems
+
+* Extra white space inside property cards (especially below image and above buttons)
+* Card height is too large and looks stretched
+* Inconsistent spacing between sections (PG and Apartment)
+* Image container not properly fitted (shows empty background / transparent grid)
+* Buttons are too far from content
+
+---
+
+### ✅ Requirements (IMPORTANT)
+
+#### 1. Fix Card Height & White Space
+
+* Card should wrap content tightly (no unnecessary vertical space)
+* Use:
+
+  ```dart
+  mainAxisSize: MainAxisSize.min
+  ```
+* Remove fixed heights unless absolutely needed
+* Use padding: `EdgeInsets.all(12)` max
+
+---
+
+#### 2. Fix Image Section
+
+* Image must fully cover container
+* No transparent/checker background visible
+
+Use:
+
+```dart
+ClipRRect(
+  borderRadius: BorderRadius.circular(16),
+  child: Image.network(
+    imageUrl,
+    height: 140,
+    width: double.infinity,
+    fit: BoxFit.cover,
+  ),
+)
+```
+
+---
+
+#### 3. Reduce Internal Spacing
+
+Use consistent spacing:
+
+```dart
+SizedBox(height: 6)
+```
+
+Avoid:
+
+* Large SizedBox (like 20–30)
+* Unnecessary Expanded widgets
+
+---
+
+#### 4. Fix Content Layout (IMPORTANT)
+
+Replace amenities row with:
+
+```
+Warehouse • Deposit: ₹0
+1 Vacancy Available
+```
+
+Use:
+
+```dart
+Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Text("Warehouse • Deposit: ₹0"),
+    SizedBox(height: 4),
+    Text("1 Vacancy Available"),
+  ],
+)
+```
+
+---
+
+#### 5. Fix Buttons Alignment
+
+Buttons should be close to content:
+
+```dart
+Row(
+  children: [
+    Expanded(
+      child: OutlinedButton(
+        onPressed: () {},
+        child: Text("Details"),
+      ),
+    ),
+    SizedBox(width: 8),
+    Expanded(
+      child: ElevatedButton(
+        onPressed: () {},
+        child: Text("Enquire Now"),
+      ),
+    ),
+  ],
+)
+```
+
+---
+
+#### 6. Fix Horizontal Scroll Cards
+
+* Set card width properly:
+
+```dart
+width: MediaQuery.of(context).size.width * 0.75
+```
+
+* Use:
+
+```dart
+ListView.separated(
+  scrollDirection: Axis.horizontal,
+```
+
+---
+
+#### 7. Remove Extra Space Between Sections
+
+Use:
+
+```dart
+SizedBox(height: 12)
+```
+
+NOT:
+
+```dart
+SizedBox(height: 30+)
+```
+
+---
+
+#### 8. Performance & Clean Code
+
+* Break into reusable widgets:
+
+  * PropertyCard
+  * SectionHeader
+* Avoid nesting too many Columns
+
+---
+
+### 🔥 Final Goal
+
+* Compact cards
+* No extra white space
+* Clean spacing like Airbnb / Zillow
+* Proper image fit
+* Smooth horizontal scroll
+
+---
+
+### 🔹 Output Required
+
+* Updated Flutter code for Property Card
+* Fix PG and Apartment sections
+* Clean and optimized layout
