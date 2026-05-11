@@ -402,6 +402,10 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
     }).toList();
   }
 
+  List<_PropertyDisplayGroup> get _visiblePropertyGroups {
+    return _groupPropertiesForDisplay(_visibleProperties);
+  }
+
   int get _totalPages {
     if (_total <= 0) return 1;
     return (_total / _pageSize).ceil();
@@ -410,7 +414,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final List<PropertyData> visibleProperties = _visibleProperties;
+    final List<_PropertyDisplayGroup> visibleGroups = _visiblePropertyGroups;
 
     return Scaffold(
       backgroundColor: _studioBackground,
@@ -442,7 +446,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
                     actionLabel: 'Try again',
                     onAction: _loadProperties,
                   )
-                else if (visibleProperties.isEmpty)
+                else if (visibleGroups.isEmpty)
                   _StatePanel(
                     icon: Icons.home_work_outlined,
                     title: 'No properties found',
@@ -461,11 +465,11 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
                       ),
                     ),
                   if (_showWishlistOnly)
-                    ..._buildWishlistProperties(theme, visibleProperties)
+                    ..._buildWishlistProperties(theme, visibleGroups)
                   else if (_viewAllPropertyType != null)
-                    ..._buildViewAllProperties(theme, visibleProperties)
+                    ..._buildViewAllProperties(theme, visibleGroups)
                   else ...<Widget>[
-                    ..._buildPropertySections(theme, visibleProperties),
+                    ..._buildPropertySections(theme, visibleGroups),
                     _buildPromoBanner(theme),
                   ],
                   if (!_showWishlistOnly && _totalPages > 1)
@@ -796,14 +800,18 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
 
   List<Widget> _buildPropertySections(
     ThemeData theme,
-    List<PropertyData> properties,
+    List<_PropertyDisplayGroup> groups,
   ) {
     const List<int> order = <int>[3, 2, 1, 4];
-    final Map<int, List<PropertyData>> grouped = <int, List<PropertyData>>{};
-    for (final PropertyData property in properties) {
-      grouped.putIfAbsent(property.propertyType, () => <PropertyData>[]).add(
-            property,
-          );
+    final Map<int, List<_PropertyDisplayGroup>> grouped =
+        <int, List<_PropertyDisplayGroup>>{};
+    for (final _PropertyDisplayGroup group in groups) {
+      grouped
+          .putIfAbsent(
+            group.primary.propertyType,
+            () => <_PropertyDisplayGroup>[],
+          )
+          .add(group);
     }
 
     final List<int> sectionTypes = <int>[
@@ -812,7 +820,8 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
     ];
 
     return sectionTypes.expand((int type) {
-      final List<PropertyData> items = grouped[type] ?? <PropertyData>[];
+      final List<_PropertyDisplayGroup> items =
+          grouped[type] ?? <_PropertyDisplayGroup>[];
       return <Widget>[
         _PropertySectionHeader(
           title: _sectionTitleForType(type),
@@ -829,23 +838,25 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
         ),
         const SizedBox(height: 8),
         SizedBox(
-          height: 258,
+          height: 404,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
             itemCount: items.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (BuildContext context, int index) {
-              final PropertyData property = items[index];
+              final _PropertyDisplayGroup group = items[index];
+              final PropertyData property = group.primary;
               return SizedBox(
                 width: MediaQuery.of(context).size.width * 0.68,
                 child: _StudioPropertyCard(
+                  group: group,
                   property: property,
                   fallbackImage: _fallbackImage,
-                  onDetails: () => _showPropertyDetails(property),
+                  onDetails: () => _showPropertyDetails(group),
                   onEnquiry: () => _showEnquirySheet(property),
                   wishlistEnabled: widget.enableWishlist,
-                  isWishlisted: _isWishlisted(property),
+                  isWishlisted: _isGroupWishlisted(group),
                   onWishlistToggle: () => _toggleWishlist(property),
                 ),
               );
@@ -861,7 +872,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
 
   List<Widget> _buildViewAllProperties(
     ThemeData theme,
-    List<PropertyData> properties,
+    List<_PropertyDisplayGroup> groups,
   ) {
     final int type = _viewAllPropertyType ?? _propertyType ?? 0;
     return <Widget>[
@@ -880,31 +891,35 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
         },
       ),
       const SizedBox(height: 12),
-      ...properties.map(
-        (PropertyData property) => Padding(
-          padding: const EdgeInsets.only(bottom: 14),
-          child: _StudioPropertyCard(
-            property: property,
-            fallbackImage: _fallbackImage,
-            onDetails: () => _showPropertyDetails(property),
-            onEnquiry: () => _showEnquirySheet(property),
-            wishlistEnabled: widget.enableWishlist,
-            isWishlisted: _isWishlisted(property),
-            onWishlistToggle: () => _toggleWishlist(property),
-          ),
-        ),
+      ...groups.map(
+        (_PropertyDisplayGroup group) {
+          final PropertyData property = group.primary;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: _StudioPropertyCard(
+              group: group,
+              property: property,
+              fallbackImage: _fallbackImage,
+              onDetails: () => _showPropertyDetails(group),
+              onEnquiry: () => _showEnquirySheet(property),
+              wishlistEnabled: widget.enableWishlist,
+              isWishlisted: _isGroupWishlisted(group),
+              onWishlistToggle: () => _toggleWishlist(property),
+            ),
+          );
+        },
       ),
     ];
   }
 
   List<Widget> _buildWishlistProperties(
     ThemeData theme,
-    List<PropertyData> properties,
+    List<_PropertyDisplayGroup> groups,
   ) {
     return <Widget>[
       _ViewAllHeader(
         title: 'Wishlist',
-        count: properties.length,
+        count: groups.length,
         onBack: () {
           setState(() {
             _showWishlistOnly = false;
@@ -913,19 +928,23 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
         },
       ),
       const SizedBox(height: 12),
-      ...properties.map(
-        (PropertyData property) => Padding(
-          padding: const EdgeInsets.only(bottom: 14),
-          child: _StudioPropertyCard(
-            property: property,
-            fallbackImage: _fallbackImage,
-            onDetails: () => _showPropertyDetails(property),
-            onEnquiry: () => _showEnquirySheet(property),
-            wishlistEnabled: widget.enableWishlist,
-            isWishlisted: _isWishlisted(property),
-            onWishlistToggle: () => _toggleWishlist(property),
-          ),
-        ),
+      ...groups.map(
+        (_PropertyDisplayGroup group) {
+          final PropertyData property = group.primary;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: _StudioPropertyCard(
+              group: group,
+              property: property,
+              fallbackImage: _fallbackImage,
+              onDetails: () => _showPropertyDetails(group),
+              onEnquiry: () => _showEnquirySheet(property),
+              wishlistEnabled: widget.enableWishlist,
+              isWishlisted: _isGroupWishlisted(group),
+              onWishlistToggle: () => _toggleWishlist(property),
+            ),
+          );
+        },
       ),
     ];
   }
@@ -1322,7 +1341,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
     );
   }
 
-  void _showPropertyDetails(PropertyData property) {
+  void _showPropertyDetails(_PropertyDisplayGroup group) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1332,14 +1351,16 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
       barrierColor: Colors.black.withValues(alpha: 0.45),
       builder: (BuildContext context) {
         return _PropertyDetailsSheet(
-          property: property,
+          property: group.primary,
+          configurations: group.configurations,
+          displayTitle: group.displayTitle,
           fallbackImage: _fallbackImage,
           wishlistEnabled: widget.enableWishlist,
-          isWishlisted: _isWishlisted(property),
-          onWishlistToggle: () => _toggleWishlist(property),
-          onEnquiry: () {
+          isWishlisted: _isGroupWishlisted(group),
+          onWishlistToggle: () => _toggleWishlist(group.primary),
+          onEnquiry: (PropertyData selectedProperty) {
             Navigator.of(context).pop();
-            _showEnquirySheet(property);
+            _showEnquirySheet(selectedProperty);
           },
         );
       },
@@ -1349,6 +1370,10 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
   bool _isWishlisted(PropertyData property) {
     final String id = _wishlistIdFor(property);
     return id.isNotEmpty && _wishlistIds.contains(id);
+  }
+
+  bool _isGroupWishlisted(_PropertyDisplayGroup group) {
+    return group.configurations.any(_isWishlisted);
   }
 
   Future<void> _toggleWishlist(PropertyData property) async {
@@ -1668,6 +1693,8 @@ class _PropertyCard extends StatelessWidget {
 class _PropertyDetailsSheet extends StatefulWidget {
   const _PropertyDetailsSheet({
     required this.property,
+    required this.configurations,
+    required this.displayTitle,
     required this.fallbackImage,
     required this.wishlistEnabled,
     required this.isWishlisted,
@@ -1676,11 +1703,13 @@ class _PropertyDetailsSheet extends StatefulWidget {
   });
 
   final PropertyData property;
+  final List<PropertyData> configurations;
+  final String displayTitle;
   final String fallbackImage;
   final bool wishlistEnabled;
   final bool isWishlisted;
   final VoidCallback onWishlistToggle;
-  final VoidCallback onEnquiry;
+  final ValueChanged<PropertyData> onEnquiry;
 
   @override
   State<_PropertyDetailsSheet> createState() => _PropertyDetailsSheetState();
@@ -1688,6 +1717,7 @@ class _PropertyDetailsSheet extends StatefulWidget {
 
 class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
   late final PageController _detailImageController;
+  late PropertyData _selectedProperty;
   Timer? _detailImageTimer;
   int _imageIndex = 0;
   bool _aboutExpanded = false;
@@ -1695,6 +1725,7 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
   @override
   void initState() {
     super.initState();
+    _selectedProperty = widget.property;
     _detailImageController = PageController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startDetailImageAutoScroll();
@@ -1710,12 +1741,12 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
 
   void _startDetailImageAutoScroll() {
     final List<String> images = _imagesFor(
-      widget.property,
+      _selectedProperty,
       widget.fallbackImage,
     );
+    _detailImageTimer?.cancel();
     if (images.length <= 1) return;
 
-    _detailImageTimer?.cancel();
     _detailImageTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted || !_detailImageController.hasClients) return;
       final int nextIndex = (_imageIndex + 1) % images.length;
@@ -1742,12 +1773,13 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final PropertyData property = _selectedProperty;
     final List<String> images = _imagesFor(
-      widget.property,
+      property,
       widget.fallbackImage,
     );
-    final List<String> amenities = _amenitiesFor(widget.property);
-    final int? vacancy = widget.property.noOfVacancy;
+    final List<String> amenities = _amenitiesFor(property);
+    final int? vacancy = property.noOfVacancy;
     final double heroHeight = (MediaQuery.sizeOf(context).height * 0.48)
         .clamp(340.0, 430.0)
         .toDouble();
@@ -1869,9 +1901,9 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      widget.property.title.isEmpty
+                      widget.displayTitle.isEmpty
                           ? 'Property details'
-                          : widget.property.title,
+                          : widget.displayTitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.headlineSmall?.copyWith(
@@ -1892,7 +1924,7 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            _locationLabel(widget.property),
+                            _locationLabel(property),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodyMedium?.copyWith(
@@ -1905,24 +1937,42 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                     ),
                     const SizedBox(height: 18),
                     _AirbnbPricePanel(
-                      rent: _money(widget.property.rent),
-                      deposit: _money(widget.property.deposit),
+                      rent: _money(property.rent),
+                      deposit: _money(property.deposit),
                     ),
                     const SizedBox(height: 18),
+                    if (widget.configurations.length > 1) ...<Widget>[
+                      _ConfigurationSelector(
+                        configurations: widget.configurations,
+                        selectedProperty: property,
+                        onSelected: (PropertyData nextProperty) {
+                          setState(() {
+                            _selectedProperty = nextProperty;
+                            _imageIndex = 0;
+                            _aboutExpanded = false;
+                          });
+                          if (_detailImageController.hasClients) {
+                            _detailImageController.jumpToPage(0);
+                          }
+                          _startDetailImageAutoScroll();
+                        },
+                      ),
+                      const SizedBox(height: 18),
+                    ],
                     _AirbnbFactRow(
                       items: <_AirbnbFactItem>[
                         _AirbnbFactItem(
                           icon: Icons.home_work_outlined,
-                          label: _subTypeLabel(widget.property),
+                          label: _configurationLabel(property),
                         ),
                         _AirbnbFactItem(
                           icon: Icons.meeting_room_outlined,
-                          label: _vacancyLongLabel(vacancy),
+                          label: _availabilityLongLabel(property),
                         ),
-                        if (_pgSharingLabel(widget.property) != null)
+                        if (_pgSharingLabel(property) != null)
                           _AirbnbFactItem(
                             icon: Icons.group_outlined,
-                            label: _pgSharingLabel(widget.property)!,
+                            label: _pgSharingLabel(property)!,
                           ),
                       ],
                     ),
@@ -1941,24 +1991,24 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                         _OverviewCardItem(
                           icon: Icons.construction_rounded,
                           label: 'Maintenance',
-                          value: _money(widget.property.maintenance ?? 0),
+                          value: _money(property.maintenance ?? 0),
                           tint: _studioAccent.withValues(alpha: 0.12),
                           iconColor: _studioAccent,
                         ),
                         _OverviewCardItem(
                           icon: Icons.meeting_room_outlined,
-                          label: 'Vacancy',
-                          value: _vacancyShortLabel(vacancy),
+                          label: property.propertyType == 3 ? 'Beds' : 'Vacancy',
+                          value: _availabilityShortLabel(property),
                           tint: const Color(0xFFE5E7EB),
                           iconColor: (vacancy ?? 1) > 0
                               ? _studioAccent
                               : _studioMuted,
                         ),
-                        if (_pgSharingLabel(widget.property) != null)
+                        if (_pgSharingLabel(property) != null)
                           _OverviewCardItem(
                             icon: Icons.group_outlined,
                             label: 'PG Sharing',
-                            value: _pgSharingLabel(widget.property)!,
+                            value: _pgSharingLabel(property)!,
                             tint: _studioSecondary.withValues(alpha: 0.18),
                             iconColor: _studioPrimary,
                           ),
@@ -1977,9 +2027,9 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                     ),
                     const SizedBox(height: 10),
                     _ExpandableAboutText(
-                      text: widget.property.description.trim().isEmpty
-                          ? '${widget.property.title.isEmpty ? 'This property' : widget.property.title} offers comfortable accommodation with practical amenities in ${_locationLabel(widget.property)}.'
-                          : widget.property.description.trim(),
+                      text: property.description.trim().isEmpty
+                          ? '${widget.displayTitle.isEmpty ? 'This property' : widget.displayTitle} offers comfortable accommodation with practical amenities in ${_locationLabel(property)}.'
+                          : property.description.trim(),
                       expanded: _aboutExpanded,
                       onToggle: () {
                         setState(() {
@@ -1998,15 +2048,15 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                     ),
                     const SizedBox(height: 10),
                     _DetailAmenityStrip(
-                      specs: _specsFor(widget.property),
+                      specs: _specsFor(property),
                       amenities: amenities,
                     ),
                     const SizedBox(height: 22),
-                    if (_hasMapLocation(widget.property)) ...<Widget>[
+                    if (_hasMapLocation(property)) ...<Widget>[
                       Align(
                         alignment: Alignment.centerLeft,
                         child: _MapIconAction(
-                          onTap: () => _openMap(widget.property),
+                          onTap: () => _openMap(property),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -2014,7 +2064,7 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
-                        onPressed: widget.onEnquiry,
+                        onPressed: () => widget.onEnquiry(property),
                         style: FilledButton.styleFrom(
                         backgroundColor: _studioPrimary,
                         foregroundColor: Colors.white,
@@ -2100,6 +2150,103 @@ class _ExpandableAboutText extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _ConfigurationSelector extends StatelessWidget {
+  const _ConfigurationSelector({
+    required this.configurations,
+    required this.selectedProperty,
+    required this.onSelected,
+  });
+
+  final List<PropertyData> configurations;
+  final PropertyData selectedProperty;
+  final ValueChanged<PropertyData> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'Available Configurations',
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: _studioInk,
+            fontWeight: FontWeight.w900,
+            fontSize: 18,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: configurations.map((PropertyData property) {
+            final bool selected =
+                property.propertyId == selectedProperty.propertyId;
+            return ChoiceChip(
+              selected: selected,
+              showCheckmark: false,
+              label: Text(_configurationLabel(property)),
+              onSelected: (_) => onSelected(property),
+              selectedColor: _studioPrimary,
+              backgroundColor: _studioSurface,
+              side: BorderSide(
+                color: selected ? _studioPrimary : _studioLine,
+              ),
+              labelStyle: TextStyle(
+                color: selected ? Colors.white : _studioInk,
+                fontWeight: FontWeight.w900,
+                fontSize: 12.5,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _ConfigurationChipStrip extends StatelessWidget {
+  const _ConfigurationChipStrip({required this.labels});
+
+  final List<String> labels;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: labels
+          .map(
+            (String label) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+              decoration: BoxDecoration(
+                color: _studioPrimary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: _studioPrimary.withValues(alpha: 0.18),
+                ),
+              ),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _studioPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 }
@@ -2725,6 +2872,7 @@ class _PurpleGradientButton extends StatelessWidget {
 
 class _StudioPropertyCard extends StatelessWidget {
   const _StudioPropertyCard({
+    required this.group,
     required this.property,
     required this.fallbackImage,
     required this.onDetails,
@@ -2734,6 +2882,7 @@ class _StudioPropertyCard extends StatelessWidget {
     required this.onWishlistToggle,
   });
 
+  final _PropertyDisplayGroup group;
   final PropertyData property;
   final String fallbackImage;
   final VoidCallback onDetails;
@@ -2747,37 +2896,42 @@ class _StudioPropertyCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final List<String> images = _imagesFor(property, fallbackImage);
     final int? vacancy = property.noOfVacancy;
+    final List<String> configLabels = group.configLabels;
 
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _studioLine),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x1F1F2937),
-            blurRadius: 26,
-            offset: Offset(0, 16),
-          ),
-          BoxShadow(
-            color: Color(0x0FFFFFFF),
-            blurRadius: 10,
-            offset: Offset(0, -3),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onDetails,
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: _studioLine),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x1F1F2937),
+              blurRadius: 26,
+              offset: Offset(0, 16),
+            ),
+            BoxShadow(
+              color: Color(0x0FFFFFFF),
+              blurRadius: 10,
+              offset: Offset(0, -3),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
             child: _Airbnb3DImage(
               images: images,
               property: property,
               photoCount: images.length,
-              rent: _money(property.rent),
+              rent: _priceRangeLabel(group),
+              isVerifiedPlus: group.isVerifiedPlus,
               wishlistEnabled: wishlistEnabled,
               isWishlisted: isWishlisted,
               onWishlistToggle: onWishlistToggle,
@@ -2785,29 +2939,141 @@ class _StudioPropertyCard extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 9, 12, 4),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Expanded(
-                  child: Text(
-                    property.title.isEmpty ? 'Property' : property.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: _studioInk,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14,
-                      letterSpacing: -0.1,
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        group.displayTitle.isEmpty
+                            ? 'Property'
+                            : group.displayTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: _studioInk,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                          letterSpacing: -0.1,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    _TinyRatingBadge(
+                      label: _availabilityShortLabel(property),
+                      positive: (vacancy ?? 1) > 0,
+                    ),
+                    if (wishlistEnabled) ...<Widget>[
+                      const SizedBox(width: 6),
+                      _WishlistButton(
+                        isSelected: isWishlisted,
+                        onTap: onWishlistToggle,
+                        compact: true,
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(width: 8),
-                _TinyRatingBadge(
-                  label: _vacancyShortLabel(vacancy),
-                  positive: (vacancy ?? 1) > 0,
+                const SizedBox(height: 4),
+                Row(
+                  children: <Widget>[
+                    const Icon(
+                      Icons.location_on_outlined,
+                      size: 14,
+                      color: _studioMuted,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        _locationLabel(property),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: _studioMuted,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11.5,
+                          height: 1.15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: <Widget>[
+                    const Icon(
+                      Icons.home_work_outlined,
+                      size: 14,
+                      color: _studioMuted,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        _configurationLabel(property),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: _studioMuted,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11.5,
+                          height: 1.15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: <Widget>[
+                    _TinyInfoPill(
+                      icon: Icons.payments_outlined,
+                      label: _priceRangeLabel(group) == 'Rent on request'
+                          ? 'Rent on request'
+                          : '${_priceRangeLabel(group)}/month',
+                    ),
+                    if (_distanceLabel(property) != null)
+                      _TinyInfoPill(
+                        icon: Icons.near_me_rounded,
+                        label: _distanceLabel(property)!,
+                      ),
+                    if (group.isVerifiedPlus)
+                      const _TinyInfoPill(
+                        icon: Icons.verified_rounded,
+                        label: 'Verified+',
+                      ),
+                  ],
                 ),
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                if (configLabels.length > 1) ...<Widget>[
+                  _ConfigurationChipStrip(labels: configLabels.take(4).toList()),
+                  const SizedBox(height: 8),
+                ],
+                _PurpleGradientButton(
+                  label: 'Enquire Now',
+                  onPressed: onEnquiry,
+                  height: 38,
+                  borderRadius: 13,
+                ),
+              ],
+            ),
+          ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+/*
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
             child: Row(
@@ -2840,6 +3106,10 @@ class _StudioPropertyCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
+                if (configLabels.isNotEmpty) ...<Widget>[
+                  _ConfigurationChipStrip(labels: configLabels.take(4).toList()),
+                  const SizedBox(height: 8),
+                ],
                 Row(
                   children: <Widget>[
                     Expanded(
@@ -2884,12 +3154,14 @@ class _StudioPropertyCard extends StatelessWidget {
   }
 }
 
+*/
 class _Airbnb3DImage extends StatefulWidget {
   const _Airbnb3DImage({
     required this.images,
     required this.property,
     required this.photoCount,
     required this.rent,
+    required this.isVerifiedPlus,
     required this.wishlistEnabled,
     required this.isWishlisted,
     required this.onWishlistToggle,
@@ -2899,6 +3171,7 @@ class _Airbnb3DImage extends StatefulWidget {
   final PropertyData property;
   final int photoCount;
   final String rent;
+  final bool isVerifiedPlus;
   final bool wishlistEnabled;
   final bool isWishlisted;
   final VoidCallback onWishlistToggle;
@@ -2955,153 +3228,37 @@ class _Airbnb3DImageState extends State<_Airbnb3DImage> {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: <Widget>[
-        Container(
-          height: 130,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: const <BoxShadow>[
-              BoxShadow(
-                color: Color(0x241F2937),
-                blurRadius: 22,
-                offset: Offset(0, 13),
-              ),
-            ],
+    return Container(
+      height: 130,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x241F2937),
+            blurRadius: 22,
+            offset: Offset(0, 13),
           ),
-          child: ClipRRect(
-              borderRadius: BorderRadius.circular(22),
-              child: Stack(
-                fit: StackFit.expand,
-                children: <Widget>[
-                  PageView.builder(
-                    controller: _pageController,
-                    itemCount: widget.images.length,
-                    onPageChanged: (int index) {
-                      setState(() {
-                        _imageIndex = index;
-                      });
-                    },
-                    itemBuilder: (BuildContext context, int index) {
-                      return Image.network(
-                        widget.images[index],
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _ImageFallback(),
-                      );
-                    },
-                  ),
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: <Color>[
-                          Color(0x18000000),
-                          Color(0x00000000),
-                          Color(0xC7000000),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    child: _SoftLabel(label: _subTypeLabel(widget.property)),
-                  ),
-                  if (widget.wishlistEnabled)
-                    Positioned(
-                      top: 10,
-                      right: 10,
-                      child: _WishlistButton(
-                        isSelected: widget.isWishlisted,
-                        onTap: widget.onWishlistToggle,
-                      ),
-                    ),
-                  if (_distanceLabel(widget.property) != null)
-                    Positioned(
-                      top: widget.wishlistEnabled ? 54 : 10,
-                      right: 10,
-                      child: _SoftLabel(
-                        label: _distanceLabel(widget.property)!,
-                        icon: Icons.near_me_rounded,
-                      ),
-                    ),
-                  Positioned(
-                    left: 12,
-                    right: 92,
-                    bottom: 12,
-                    child: Text(
-                      _locationLabel(widget.property),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 11.5,
-                        shadows: const <Shadow>[
-                          Shadow(blurRadius: 10, color: Colors.black54),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (widget.photoCount > 1)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 9,
-                      child: Center(
-                        child: _MiniPhotoDots(
-                          count: widget.photoCount,
-                          activeIndex: _imageIndex,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: PageView.builder(
+          controller: _pageController,
+          itemCount: widget.images.length,
+          onPageChanged: (int index) {
+            setState(() {
+              _imageIndex = index;
+            });
+          },
+          itemBuilder: (BuildContext context, int index) {
+            return Image.network(
+              widget.images[index],
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _ImageFallback(),
+            );
+          },
         ),
-        Positioned(
-          right: 10,
-          bottom: 10,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: const <BoxShadow>[
-                BoxShadow(
-                  color: Color(0x261F2937),
-                  blurRadius: 14,
-                  offset: Offset(0, 7),
-                ),
-              ],
-            ),
-            child: RichText(
-              text: TextSpan(
-                text: widget.rent,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: _studioInk,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 13,
-                ),
-                children: <TextSpan>[
-                  TextSpan(
-                    text: '/mo',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: _studioMuted,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -3164,6 +3321,50 @@ class _TinyRatingBadge extends StatelessWidget {
           color: positive ? _studioAccent : _studioInk,
           fontSize: 10.5,
           fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _TinyInfoPill extends StatelessWidget {
+  const _TinyInfoPill({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 190),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: _studioSurface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: _studioLine),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(icon, size: 12, color: _studioPrimary),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: _studioInk,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -4002,10 +4203,12 @@ class _WishlistButton extends StatelessWidget {
   const _WishlistButton({
     required this.isSelected,
     required this.onTap,
+    this.compact = false,
   });
 
   final bool isSelected;
   final VoidCallback onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -4013,8 +4216,8 @@ class _WishlistButton extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
-        width: 40,
-        height: 40,
+        width: compact ? 30 : 40,
+        height: compact ? 30 : 40,
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.92),
           shape: BoxShape.circle,
@@ -4029,7 +4232,7 @@ class _WishlistButton extends StatelessWidget {
         child: Icon(
           isSelected ? Icons.favorite_rounded : Icons.favorite_border_rounded,
           color: const Color(0xFFE11D48),
-          size: 22,
+          size: compact ? 17 : 22,
         ),
       ),
     );
@@ -4295,6 +4498,45 @@ class _ImageFallback extends StatelessWidget {
   }
 }
 
+class _PropertyDisplayGroup {
+  const _PropertyDisplayGroup({
+    required this.groupKey,
+    required this.displayTitle,
+    required this.configurations,
+  });
+
+  final String groupKey;
+  final String displayTitle;
+  final List<PropertyData> configurations;
+
+  PropertyData get primary {
+    final List<PropertyData> sorted = <PropertyData>[...configurations]
+      ..sort((PropertyData a, PropertyData b) {
+        final int rentCompare = a.rent.compareTo(b.rent);
+        if (rentCompare != 0) return rentCompare;
+        return a.propertyId.compareTo(b.propertyId);
+      });
+    return sorted.first;
+  }
+
+  List<String> get configLabels {
+    final List<String> labels = <String>[];
+    for (final PropertyData property in configurations) {
+      final String label = _configurationLabel(property);
+      if (!labels.contains(label)) {
+        labels.add(label);
+      }
+    }
+    return labels;
+  }
+
+  bool get isVerifiedPlus {
+    return configurations.any(
+      (PropertyData property) => property.whetherVerifiedPlus == true,
+    );
+  }
+}
+
 enum _PriceRange {
   all('All'),
   low('Under 15k'),
@@ -4383,6 +4625,141 @@ String _sectionTitleForType(int type) {
     3 => 'PG (Paying Guest)',
     _ => _propertyTypeLabel(type),
   };
+}
+
+List<_PropertyDisplayGroup> _groupPropertiesForDisplay(
+  List<PropertyData> properties,
+) {
+  final Map<String, List<PropertyData>> buckets = <String, List<PropertyData>>{};
+  final Map<String, String> titles = <String, String>{};
+
+  for (final PropertyData property in properties) {
+    final String displayTitle = _displayTitleFor(property);
+    final String groupKey = _groupKeyFor(property, displayTitle);
+    buckets.putIfAbsent(groupKey, () => <PropertyData>[]).add(property);
+    titles.putIfAbsent(groupKey, () => displayTitle);
+  }
+
+  final List<_PropertyDisplayGroup> groups = buckets.entries
+      .map(
+        (MapEntry<String, List<PropertyData>> entry) => _PropertyDisplayGroup(
+          groupKey: entry.key,
+          displayTitle: titles[entry.key] ?? 'Property',
+          configurations: entry.value,
+        ),
+      )
+      .toList();
+
+  groups.sort((_PropertyDisplayGroup a, _PropertyDisplayGroup b) {
+    final double aDistance = a.primary.distanceKm ?? double.maxFinite;
+    final double bDistance = b.primary.distanceKm ?? double.maxFinite;
+    final int distanceCompare = aDistance.compareTo(bDistance);
+    if (distanceCompare != 0) return distanceCompare;
+    return a.displayTitle.compareTo(b.displayTitle);
+  });
+  return groups;
+}
+
+String _groupKeyFor(PropertyData property, String displayTitle) {
+  final String city = (property.cityId ?? property.city ?? '').toLowerCase();
+  final String location = _roundedLocationKey(property);
+  return <String>[
+    property.propertyType.toString(),
+    city,
+    location,
+    _normalizeTitle(displayTitle),
+  ].join('|');
+}
+
+String _roundedLocationKey(PropertyData property) {
+  final double? latitude = property.latitude;
+  final double? longitude = property.longitude;
+  if (latitude == null || longitude == null || latitude == 0 || longitude == 0) {
+    return _normalizeTitle(property.locationAddress ?? property.address ?? '');
+  }
+  return '${latitude.toStringAsFixed(3)},${longitude.toStringAsFixed(3)}';
+}
+
+String _displayTitleFor(PropertyData property) {
+  String title = property.title.trim();
+  if (title.isEmpty) return 'Property';
+
+  title = title.replaceFirst(
+    RegExp(r'^\s*(?:studio|[1-9]\s*bhk)(?:\s+villa)?\s*[-:|]\s*',
+        caseSensitive: false),
+    '',
+  );
+  title = title.replaceFirst(
+    RegExp(
+      r'^\s*(?:single|double|triple|quad|dorm)(?:\s+sharing)?\s*[-:|]\s*',
+      caseSensitive: false,
+    ),
+    '',
+  );
+  title = title.replaceFirst(
+    RegExp(
+      r'^\s*(?:ground|first|second|third|fourth|fifth)\s+floor\s*[-:|]\s*',
+      caseSensitive: false,
+    ),
+    '',
+  );
+  title = title.replaceFirst(
+    RegExp(r'\s+(?:copy|duplicate)\s*$', caseSensitive: false),
+    '',
+  );
+
+  title = title.trim();
+  if (property.propertyType == 2 &&
+      title.isNotEmpty &&
+      !title.toLowerCase().contains('villa')) {
+    title = '$title Villa';
+  }
+  return title.isEmpty ? property.title.trim() : title;
+}
+
+String _normalizeTitle(String value) {
+  return value
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+      .trim()
+      .replaceAll(RegExp(r'\s+'), ' ');
+}
+
+String _configurationLabel(PropertyData property) {
+  if (property.propertyType == 3) {
+    return _pgSharingLabel(property) ?? _subTypeLabel(property);
+  }
+
+  final String floorLabel = _floorConfigurationLabel(property.title);
+  if (floorLabel.isNotEmpty) return floorLabel;
+
+  final String subType = _subTypeLabel(property);
+  return subType;
+}
+
+String _floorConfigurationLabel(String title) {
+  final RegExpMatch? match = RegExp(
+    r'^\s*((?:ground|first|second|third|fourth|fifth)\s+floor)\s*[-:|]',
+    caseSensitive: false,
+  ).firstMatch(title);
+  if (match == null) return '';
+  final String raw = match.group(1) ?? '';
+  return raw
+      .split(' ')
+      .map((String part) =>
+          part.isEmpty ? part : '${part[0].toUpperCase()}${part.substring(1)}')
+      .join(' ');
+}
+
+String _priceRangeLabel(_PropertyDisplayGroup group) {
+  final List<double> rents = group.configurations
+      .map((PropertyData property) => property.rent)
+      .where((double rent) => rent > 0)
+      .toList()
+    ..sort();
+  if (rents.isEmpty) return 'Rent on request';
+  if (rents.first == rents.last) return _money(rents.first);
+  return '${_money(rents.first)} - ${_money(rents.last)}';
 }
 
 List<_QuickSpec> _cardSpecsFor(PropertyData property, List<_QuickSpec> specs) {
@@ -4475,6 +4852,24 @@ String _vacancyLongLabel(int? vacancy) {
   if (vacancy <= 0) return 'No Vacancy Available';
   if (vacancy == 1) return '1 Vacancy Available';
   return '$vacancy Vacancies Available';
+}
+
+String _availabilityShortLabel(PropertyData property) {
+  final int? vacancy = property.noOfVacancy;
+  if (property.propertyType != 3) return _vacancyShortLabel(vacancy);
+  if (vacancy == null) return 'Beds N/A';
+  if (vacancy <= 0) return 'No Beds';
+  if (vacancy == 1) return '1 Bed';
+  return '$vacancy Beds';
+}
+
+String _availabilityLongLabel(PropertyData property) {
+  final int? vacancy = property.noOfVacancy;
+  if (property.propertyType != 3) return _vacancyLongLabel(vacancy);
+  if (vacancy == null) return 'Beds N/A';
+  if (vacancy <= 0) return 'No Beds Available';
+  if (vacancy == 1) return '1 Bed Available';
+  return '$vacancy Beds Available';
 }
 
 String _wishlistIdFor(PropertyData property) {

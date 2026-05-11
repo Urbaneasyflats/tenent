@@ -445,7 +445,7 @@ class _TenantContractsPageState extends State<TenantContractsPage> {
               crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 1.9,
+              childAspectRatio: 1.55,
               children: <Widget>[
                 _SummaryCard(
                   label: 'Active',
@@ -579,12 +579,17 @@ class _SummaryCard extends StatelessWidget {
         children: <Widget>[
           ToneBadge(label: label, tone: tone, size: ToneBadgeSize.small),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: Theme.of(context)
-                .textTheme
-                .titleLarge
-                ?.copyWith(fontWeight: FontWeight.w700),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),

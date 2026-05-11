@@ -1000,10 +1000,21 @@ class _SupportPageState extends State<SupportPage> {
     }
 
     String contractTicketLabel(RentalContractRecord contract) {
-      final String owner = contract.ownerName.isEmpty
+      final String owner = contract.ownerName.trim().isEmpty
           ? ''
           : ' (Owner: ${contract.ownerName})';
-      return 'Contract for ${contract.tenantName}$owner';
+      final List<String> propertyParts = <String>[
+        if (contract.propertyTitle.trim().isNotEmpty) contract.propertyTitle,
+        if ((contract.flatNo ?? '').trim().isNotEmpty)
+          'Unit ${contract.flatNo}',
+      ];
+      final String property = propertyParts.isEmpty
+          ? 'Rented property'
+          : propertyParts.join(' | ');
+      final String tenant = contract.tenantName.trim().isEmpty
+          ? ''
+          : ' - ${contract.tenantName}';
+      return '$property$tenant$owner';
     }
 
     Future<void> loadTargets(
@@ -1059,11 +1070,7 @@ class _SupportPageState extends State<SupportPage> {
         isLoadingTargets = false;
         selectedTypeId = ticketType == 'society'
             ? (residentOptions.isNotEmpty ? residentOptions.first.id : '')
-            : (contractOptions.isNotEmpty
-                  ? ((contractOptions.first.propertyId ?? '').isNotEmpty
-                        ? contractOptions.first.propertyId!
-                        : contractOptions.first.id)
-                  : '');
+            : (contractOptions.isNotEmpty ? contractOptions.first.id : '');
       });
     }
 
@@ -1104,6 +1111,7 @@ class _SupportPageState extends State<SupportPage> {
 
             Future<void> submit() async {
               ResidentRecord? selectedResident;
+              RentalContractRecord? selectedContract;
               if (ticketType == 'society') {
                 for (final ResidentRecord resident in residentOptions) {
                   if (resident.id == selectedTypeId) {
@@ -1111,10 +1119,17 @@ class _SupportPageState extends State<SupportPage> {
                     break;
                   }
                 }
+              } else {
+                for (final RentalContractRecord contract in contractOptions) {
+                  if (contract.id == selectedTypeId) {
+                    selectedContract = contract;
+                    break;
+                  }
+                }
               }
               final String ticketTypeIdForApi = ticketType == 'society'
                   ? (selectedResident?.societyId ?? '')
-                  : selectedTypeId;
+                  : (selectedContract?.propertyId ?? '');
 
               if (titleController.text.trim().isEmpty ||
                   descriptionController.text.trim().isEmpty ||
@@ -1307,10 +1322,7 @@ class _SupportPageState extends State<SupportPage> {
                                     (
                                       RentalContractRecord contract,
                                     ) => DropdownMenuItem<String>(
-                                      value:
-                                          (contract.propertyId ?? '').isNotEmpty
-                                          ? contract.propertyId!
-                                          : contract.id,
+                                      value: contract.id,
                                       child: Text(
                                         contractTicketLabel(contract),
                                         maxLines: 1,

@@ -478,6 +478,7 @@ class _AppShellState extends State<AppShell> {
         icon: Icons.person_outline_rounded,
         child: MorePage(
           role: widget.role,
+          vendor: _vendor,
           modules: _modulesForRole(widget.role),
           onModuleSelected: (ModuleStatusItem module) =>
               _openModule(context, module),
@@ -545,6 +546,7 @@ class _AppShellState extends State<AppShell> {
         icon: Icons.person_outline_rounded,
         child: MorePage(
           role: widget.role,
+          vendor: _vendor,
           modules: _modulesForRole(widget.role),
           onModuleSelected: (ModuleStatusItem module) =>
               _openModule(context, module),
@@ -690,7 +692,11 @@ class _AppShellState extends State<AppShell> {
           ),
         ),
       ),
-    );
+    ).then((_) {
+      if (mounted && module.actionKey == 'settings') {
+        _loadData();
+      }
+    });
   }
 
   String _prettyTitle(String actionKey) {

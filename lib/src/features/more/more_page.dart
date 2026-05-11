@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/models/api_models.dart';
 import '../../core/models/app_models.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/custom_card.dart';
@@ -12,12 +13,14 @@ class MorePage extends StatelessWidget {
     required this.modules,
     required this.onModuleSelected,
     required this.onLogout,
+    this.vendor,
   });
 
   final AppRole role;
   final List<ModuleStatusItem> modules;
   final ValueChanged<ModuleStatusItem> onModuleSelected;
   final VoidCallback onLogout;
+  final VendorData? vendor;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +36,7 @@ class MorePage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 124),
       children: <Widget>[
         // Profile card
-        _ProfileCard(role: role, onLogout: onLogout),
+        _ProfileCard(role: role, vendor: vendor, onLogout: onLogout),
         const SizedBox(height: 24),
 
         // Ready modules grid
@@ -76,42 +79,65 @@ class MorePage extends StatelessWidget {
 }
 
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({required this.role, required this.onLogout});
+  const _ProfileCard({
+    required this.role,
+    required this.vendor,
+    required this.onLogout,
+  });
 
   final AppRole role;
+  final VendorData? vendor;
   final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final String displayName = vendor?.fullName.trim().isNotEmpty == true
+        ? vendor!.fullName.trim()
+        : role.label;
+    final String subtitle = vendor?.phone.trim().isNotEmpty == true
+        ? vendor!.phone.trim()
+        : 'Live session';
 
     return CustomCard(
       child: Column(
         children: <Widget>[
           Row(
             children: <Widget>[
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: AppTheme.primarySoft,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(role.icon, color: AppTheme.primary, size: 26),
-              ),
+              _AccountAvatar(imageUrl: vendor?.imageUrl, fallbackIcon: role.icon),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      role.label,
+                      displayName,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const ToneBadge(label: 'Live session', tone: UiTone.success),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: <Widget>[
+                        ToneBadge(label: role.label, tone: UiTone.brand),
+                        const ToneBadge(
+                          label: 'Live session',
+                          tone: UiTone.success,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -128,6 +154,44 @@ class _ProfileCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AccountAvatar extends StatelessWidget {
+  const _AccountAvatar({required this.imageUrl, required this.fallbackIcon});
+
+  final String? imageUrl;
+  final IconData fallbackIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    final String? trimmed = imageUrl?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return _fallback();
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.network(
+        trimmed,
+        width: 56,
+        height: 56,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _fallback(),
+      ),
+    );
+  }
+
+  Widget _fallback() {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: AppTheme.primarySoft,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Icon(fallbackIcon, color: AppTheme.primary, size: 26),
     );
   }
 }

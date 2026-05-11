@@ -93,6 +93,9 @@ class _SettingsPageState extends State<SettingsPage> {
       final response = await VendorService.setVendorProfile(
         fullName: fullName,
         email: email,
+        imageId: _vendor?.imageId?.isNotEmpty == true
+            ? _vendor!.imageId
+            : null,
       );
 
       if (!mounted) {

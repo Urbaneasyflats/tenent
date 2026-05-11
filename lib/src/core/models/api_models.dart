@@ -58,8 +58,12 @@ class VendorData {
       vendorType: json['Vendor_Type'] as int? ?? 0,
       imageUrl:
           json['Image_Original_URL'] as String? ??
-          imageInformation?['Image_Original_URL'] as String?,
+          imageInformation?['Image_Original_URL'] as String? ??
+          imageInformation?['Image_URL'] as String? ??
+          imageInformation?['URL'] as String?,
       imageId:
+          json['ImageID'] as String? ??
+          json['Image_ID'] as String? ??
           imageInformation?['ImageID'] as String? ??
           imageInformation?['Image_ID'] as String?,
       societyId: json['SocietyID'] as String?,
