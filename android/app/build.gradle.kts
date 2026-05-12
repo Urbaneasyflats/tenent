@@ -18,9 +18,9 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.urbaneasy.resident_app"
+    namespace = "com.urbaneasy.urbantenant"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    ndkVersion = "26.3.11579264"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -33,8 +33,8 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.urbaneasy.resident_app"
-        minSdk = flutter.minSdkVersion
+        applicationId = "com.urbaneasy.urbantenant"
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -68,4 +68,6 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
+    implementation("com.google.firebase:firebase-messaging")
 }

@@ -89,6 +89,25 @@ String _joinLocationParts(List<String?> values) {
   return parts.join(', ');
 }
 
+double _landingTextScale(BuildContext context) {
+  return MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.6).toDouble();
+}
+
+double _landingCardWidth(BuildContext context) {
+  final double screenWidth = MediaQuery.sizeOf(context).width;
+  return (screenWidth * 0.74).clamp(260.0, 330.0).toDouble();
+}
+
+double _landingCardHeight(BuildContext context) {
+  final double scale = _landingTextScale(context);
+  return (428 + ((scale - 1) * 110)).clamp(428.0, 540.0).toDouble();
+}
+
+double _promoBannerMinHeight(BuildContext context) {
+  final double scale = _landingTextScale(context);
+  return (126 + ((scale - 1) * 46)).clamp(126.0, 184.0).toDouble();
+}
+
 class FindPropertyPage extends StatefulWidget {
   const FindPropertyPage({
     super.key,
@@ -718,9 +737,13 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
   }
 
   Widget _buildPromoBanner(ThemeData theme) {
+    final double textScale = _landingTextScale(context);
+    final double promoButtonHeight =
+        (32 + ((textScale - 1) * 14)).clamp(32.0, 48.0).toDouble();
+
     return Container(
       margin: const EdgeInsets.only(top: 0, bottom: 18),
-      height: 112,
+      constraints: BoxConstraints(minHeight: _promoBannerMinHeight(context)),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         gradient: const LinearGradient(
@@ -752,6 +775,8 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
                     children: <Widget>[
                       Text(
                         'Find your perfect stay',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleLarge?.copyWith(
                           color: _studioInk,
                           fontWeight: FontWeight.w900,
@@ -761,6 +786,8 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
                       const SizedBox(height: 4),
                       Text(
                         'Comfortable. Verified. Curated for you.',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: _studioMuted,
                           fontWeight: FontWeight.w500,
@@ -778,7 +805,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
                             horizontal: 18,
                             vertical: 6,
                           ),
-                          minimumSize: const Size(0, 32),
+                          minimumSize: Size(0, promoButtonHeight),
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           visualDensity: VisualDensity.compact,
                           shape: RoundedRectangleBorder(
@@ -803,6 +830,8 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
     List<_PropertyDisplayGroup> groups,
   ) {
     const List<int> order = <int>[3, 2, 1, 4];
+    final double cardWidth = _landingCardWidth(context);
+    final double cardHeight = _landingCardHeight(context);
     final Map<int, List<_PropertyDisplayGroup>> grouped =
         <int, List<_PropertyDisplayGroup>>{};
     for (final _PropertyDisplayGroup group in groups) {
@@ -838,7 +867,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
         ),
         const SizedBox(height: 8),
         SizedBox(
-          height: 404,
+          height: cardHeight,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
@@ -848,7 +877,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
               final _PropertyDisplayGroup group = items[index];
               final PropertyData property = group.primary;
               return SizedBox(
-                width: MediaQuery.of(context).size.width * 0.68,
+                width: cardWidth,
                 child: _StudioPropertyCard(
                   group: group,
                   property: property,
@@ -2815,7 +2844,12 @@ class _PurpleGradientButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double resolvedHeight = height ?? (compact ? 38 : 48);
+    final double textScale = _landingTextScale(context);
+    final double baseHeight = height ?? (compact ? 38 : 48);
+    final double resolvedHeight =
+        (baseHeight + ((textScale - 1) * 16))
+            .clamp(baseHeight, baseHeight + 24)
+            .toDouble();
     final double resolvedRadius = borderRadius ?? (compact ? 999 : 16);
 
     return Material(

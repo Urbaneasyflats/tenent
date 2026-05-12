@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "403657963841",
+    "project_id": "urbaneasyflats-e9af3",
+    "storage_bucket": "urbaneasyflats-e9af3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:403657963841:android:8a8b3192b4f4cb895d49c0",
+        "android_client_info": {
+          "package_name": "com.urbaneasy.urbantenant"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYc03x04xoZ6ND6NE4x_d4FhDibA6Q9BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,16 +1,21 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../../../firebase_options.dart';
 import '../api/auth_service.dart';
 
 // Must be a top-level function — runs in a separate isolate when app is terminated.
 @pragma('vm:entry-point')
 Future<void> _onBackgroundMessage(RemoteMessage message) async {
-  // FCM shows the notification automatically for notification messages.
-  // No Firebase.initializeApp() needed here for basic use.
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (_) {}
 }
 
 class PushNotificationService {

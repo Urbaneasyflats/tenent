@@ -1,35 +1,32 @@
-// ============================================================
-// PLACEHOLDER — Replace this file before using push notifications
-// ============================================================
-//
-// Steps to generate the real file:
-//   1. Install FlutterFire CLI:
-//        dart pub global activate flutterfire_cli
-//
-//   2. Log in to Firebase (if needed):
-//        firebase login
-//
-//   3. Run from the project root:
-//        flutterfire configure
-//
-//   4. Select your Firebase project and target platforms.
-//      The CLI will overwrite this file with the correct values.
-//
-// Until this is done, Firebase.initializeApp() will throw and
-// push notifications will be silently disabled (the rest of
-// the app works normally).
-// ============================================================
-
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
 class DefaultFirebaseOptions {
   DefaultFirebaseOptions._();
 
   static FirebaseOptions get currentPlatform {
-    throw UnsupportedError(
-      'Firebase is not configured yet.\n'
-      'Run: flutterfire configure\n'
-      'See: https://firebase.flutter.dev/docs/cli/',
-    );
+    if (kIsWeb) {
+      throw UnsupportedError('Firebase is not configured for web.');
+    }
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return android;
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+      case TargetPlatform.linux:
+      case TargetPlatform.fuchsia:
+        throw UnsupportedError('Firebase is not configured for this platform.');
+    }
   }
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyDYc03x04xoZ6ND6NE4x_d4FhDibA6Q9BM',
+    appId: '1:403657963841:android:8a8b3192b4f4cb895d49c0',
+    messagingSenderId: '403657963841',
+    projectId: 'urbaneasyflats-e9af3',
+    storageBucket: 'urbaneasyflats-e9af3.firebasestorage.app',
+  );
 }
