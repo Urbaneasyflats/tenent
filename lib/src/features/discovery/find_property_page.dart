@@ -79,7 +79,7 @@ double _landingTextScale(BuildContext context) {
 
 double _landingCardWidth(BuildContext context) {
   final double screenWidth = MediaQuery.sizeOf(context).width;
-  return (screenWidth * 0.74).clamp(260.0, 330.0).toDouble();
+  return (screenWidth * 0.78).clamp(286.0, 352.0).toDouble();
 }
 
 double _promoBannerMinHeight(BuildContext context) {
@@ -421,7 +421,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
           children: <Widget>[
             const Positioned.fill(child: ColoredBox(color: _studioBackground)),
             ListView(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: <Widget>[
                 _buildHomeHeader(theme),
                 const SizedBox(height: 14),
@@ -479,104 +479,126 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
   }
 
   Widget _buildHomeHeader(ThemeData theme) {
-    return Row(
-      children: <Widget>[
-        Container(
-          width: 44,
-          height: 44,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: <BoxShadow>[
+            color: Colors.white.withValues(alpha: 0.86),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.74)),
+            boxShadow: const <BoxShadow>[
               BoxShadow(
-                color: _studioPrimary.withValues(alpha: 0.10),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
+                color: Color(0x146C5CE7),
+                blurRadius: 26,
+                offset: Offset(0, 12),
               ),
             ],
           ),
-          clipBehavior: Clip.antiAlias,
-          child: Image.asset('assets/tenenet_logo.jpg', fit: BoxFit.cover),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: InkWell(
-            onTap: _refreshLocation,
-            borderRadius: BorderRadius.circular(18),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: _studioPrimary.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(12),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: const <BoxShadow>[
+                    BoxShadow(
+                      color: Color(0x1A111827),
+                      blurRadius: 14,
+                      offset: Offset(0, 7),
                     ),
-                    child: Icon(
-                      _hasUserLocation
-                          ? Icons.near_me_rounded
-                          : Icons.location_on_outlined,
-                      color: _studioPrimary,
-                      size: 19,
-                    ),
-                  ),
-                  const SizedBox(width: 9),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Row(
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Image.asset('assets/tenenet_logo.jpg', fit: BoxFit.cover),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: InkWell(
+                  onTap: _refreshLocation,
+                  borderRadius: BorderRadius.circular(18),
+                  child: Row(
+                    children: <Widget>[
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: _studioPrimary.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          _hasUserLocation
+                              ? Icons.near_me_rounded
+                              : Icons.location_on_outlined,
+                          color: _studioPrimary,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
-                            Flexible(
-                              child: Text(
-                                _locationTitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: _studioInk,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 18,
-                                  height: 1,
+                            Row(
+                              children: <Widget>[
+                                Flexible(
+                                  child: Text(
+                                    _locationTitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      color: _studioInk,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 17,
+                                      height: 1.05,
+                                      letterSpacing: 0,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(width: 2),
+                                const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: _studioInk,
+                                  size: 20,
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 3),
-                            const Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              color: _studioInk,
-                              size: 20,
+                            const SizedBox(height: 4),
+                            Text(
+                              _locationSubtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: _studioMuted,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11.5,
+                                height: 1.1,
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 5),
-                        Text(
-                          _locationSubtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: _studioMuted,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+              if (widget.showLoginButton) ...<Widget>[
+                const SizedBox(width: 10),
+                _PurpleGradientButton(
+                  label: 'Login',
+                  icon: Icons.login_rounded,
+                  onPressed: widget.onLoginPressed,
+                  compact: true,
+                ),
+              ],
+            ],
           ),
         ),
-        if (widget.showLoginButton)
-          _PurpleGradientButton(
-            label: 'Login',
-            icon: Icons.login_rounded,
-            onPressed: widget.onLoginPressed,
-            compact: true,
-          ),
-      ],
+      ),
     );
   }
 
@@ -585,21 +607,21 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
       children: <Widget>[
         Expanded(
           child: Container(
-            height: 48,
+            height: 54,
             decoration: BoxDecoration(
               color: _studioSurface,
-              borderRadius: BorderRadius.circular(23),
-              border: Border.all(color: _studioLine),
+              borderRadius: BorderRadius.circular(27),
+              border: Border.all(color: Colors.white),
               boxShadow: const <BoxShadow>[
                 BoxShadow(
                   color: Color(0x146C5CE7),
-                  blurRadius: 18,
-                  offset: Offset(0, 10),
+                  blurRadius: 24,
+                  offset: Offset(0, 12),
                 ),
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 5, 5, 5),
+              padding: const EdgeInsets.fromLTRB(16, 6, 6, 6),
               child: Row(
                 children: <Widget>[
                   const Icon(
@@ -635,7 +657,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
                     style: IconButton.styleFrom(
                       backgroundColor: _studioPrimary,
                       foregroundColor: Colors.white,
-                      fixedSize: const Size(38, 38),
+                      fixedSize: const Size(42, 42),
                       shape: const CircleBorder(),
                     ),
                     icon: const Icon(Icons.tune_rounded, size: 19),
@@ -865,9 +887,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
             }),
           ),
         ),
-        const SizedBox(height: 8),
-        _SectionDots(count: items.length.clamp(1, 5)),
-        const SizedBox(height: 12),
+        const SizedBox(height: 18),
       ];
     }).toList();
   }
@@ -2205,17 +2225,17 @@ class _ConfigurationChipStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 6,
-      runSpacing: 6,
+      spacing: 7,
+      runSpacing: 7,
       children: labels
           .map(
             (String label) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
               decoration: BoxDecoration(
-                color: _studioPrimary.withValues(alpha: 0.08),
+                color: const Color(0xFFF6F3FF),
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
-                  color: _studioPrimary.withValues(alpha: 0.18),
+                  color: _studioPrimary.withValues(alpha: 0.10),
                 ),
               ),
               child: Text(
@@ -2224,7 +2244,7 @@ class _ConfigurationChipStrip extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: _studioPrimary,
-                  fontSize: 10.5,
+                  fontSize: 11,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -2791,7 +2811,7 @@ class _PurpleGradientButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double textScale = _landingTextScale(context);
-    final double baseHeight = height ?? (compact ? 38 : 48);
+    final double baseHeight = height ?? (compact ? 38 : 50);
     final double resolvedHeight = (baseHeight + ((textScale - 1) * 16))
         .clamp(baseHeight, baseHeight + 24)
         .toDouble();
@@ -2811,9 +2831,9 @@ class _PurpleGradientButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(resolvedRadius),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: _studioPrimary.withValues(alpha: 0.22),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
+              color: _studioPrimary.withValues(alpha: 0.28),
+              blurRadius: 18,
+              offset: const Offset(0, 9),
             ),
           ],
         ),
@@ -2836,8 +2856,8 @@ class _PurpleGradientButton extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: compact ? 12.5 : 12,
-                    fontWeight: FontWeight.w800,
+                    fontSize: compact ? 12.5 : 13.5,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ],
@@ -2875,111 +2895,109 @@ class _StudioPropertyCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final List<String> images = _imagesFor(property, fallbackImage);
     final int? vacancy = property.noOfVacancy;
-    final List<String> configLabels = group.configLabels.take(3).toList();
+    final List<String> configLabels = group.configLabels.take(2).toList();
     final String location = _locationLabel(property);
     final String priceLabel = _priceRangeLabel(group);
+    final String? distanceLabel = _distanceLabel(property);
+    final String sharingLabel = _configurationLabel(property);
+    final String bedLabel = _availabilityShortLabel(property);
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return _PressableScale(
       onTap: onDetails,
-      child: AnimatedScale(
-        duration: const Duration(milliseconds: 140),
-        curve: Curves.easeOutCubic,
-        scale: 1,
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(color: Colors.white),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x1F111827),
+              blurRadius: 28,
+              offset: Offset(0, 16),
+            ),
+            BoxShadow(
+              color: Color(0x0F6C5CE7),
+              blurRadius: 12,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
         child: Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFF1F2F4)),
-            boxShadow: const <BoxShadow>[
-              BoxShadow(
-                color: Color(0x1A111827),
-                blurRadius: 24,
-                offset: Offset(0, 14),
-              ),
-              BoxShadow(
-                color: Color(0x0D6C5CE7),
-                blurRadius: 10,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
+          padding: const EdgeInsets.all(10),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-                child: _Airbnb3DImage(
-                  images: images,
-                  property: property,
-                  photoCount: images.length,
-                  rent: priceLabel,
-                  isVerifiedPlus: group.isVerifiedPlus,
-                  wishlistEnabled: wishlistEnabled,
-                  isWishlisted: isWishlisted,
-                  onWishlistToggle: onWishlistToggle,
-                ),
+              _Airbnb3DImage(
+                images: images,
+                property: property,
+                photoCount: images.length,
+                rent: priceLabel,
+                availabilityLabel: bedLabel,
+                isVerifiedPlus: group.isVerifiedPlus,
+                wishlistEnabled: wishlistEnabled,
+                isWishlisted: isWishlisted,
+                onWishlistToggle: onWishlistToggle,
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                padding: const EdgeInsets.fromLTRB(6, 13, 6, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            group.displayTitle.isEmpty
-                                ? 'Property'
-                                : group.displayTitle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              color: _studioInk,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 14.5,
-                              height: 1.15,
-                              letterSpacing: 0,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        _TinyRatingBadge(
-                          label: _availabilityShortLabel(property),
-                          positive: (vacancy ?? 1) > 0,
-                        ),
-                      ],
+                    Text(
+                      priceLabel == 'Rent on request'
+                          ? priceLabel
+                          : '$priceLabel / month',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: _studioInk,
+                        fontSize: 20,
+                        height: 1.05,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 6),
+                    Text(
+                      group.displayTitle.isEmpty ? 'Property' : group.displayTitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: _studioInk,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        height: 1.18,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 9),
                     _CompactMetaLine(
                       icon: Icons.location_on_outlined,
                       label: location,
                     ),
-                    const SizedBox(height: 4),
-                    _CompactMetaLine(
-                      icon: Icons.home_work_outlined,
-                      label: _configurationLabel(property),
-                    ),
                     const SizedBox(height: 8),
                     Wrap(
-                      spacing: 5,
-                      runSpacing: 5,
+                      spacing: 7,
+                      runSpacing: 7,
                       children: <Widget>[
-                        _TinyInfoPill(
-                          icon: Icons.payments_outlined,
-                          label: priceLabel == 'Rent on request'
-                              ? priceLabel
-                              : '$priceLabel/mo',
-                          emphasized: true,
-                        ),
-                        if (_distanceLabel(property) != null)
+                        if (distanceLabel != null)
                           _TinyInfoPill(
                             icon: Icons.near_me_rounded,
-                            label: _distanceLabel(property)!,
+                            label: distanceLabel,
                           ),
+                        _TinyInfoPill(
+                          icon: property.propertyType == 3
+                              ? Icons.meeting_room_outlined
+                              : Icons.home_work_outlined,
+                          label: sharingLabel,
+                        ),
+                        _TinyInfoPill(
+                          icon: Icons.bed_outlined,
+                          label: bedLabel,
+                          emphasized: (vacancy ?? 1) > 0,
+                        ),
                         if (group.isVerifiedPlus)
                           const _TinyInfoPill(
                             icon: Icons.verified_rounded,
@@ -2991,20 +3009,20 @@ class _StudioPropertyCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                padding: const EdgeInsets.fromLTRB(6, 12, 6, 4),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     if (configLabels.length > 1) ...<Widget>[
                       _ConfigurationChipStrip(labels: configLabels),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                     ],
                     _PurpleGradientButton(
                       label: 'Enquire',
                       onPressed: onEnquiry,
-                      height: 34,
-                      borderRadius: 12,
+                      height: 44,
+                      borderRadius: 16,
                     ),
                   ],
                 ),
@@ -3012,6 +3030,44 @@ class _StudioPropertyCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PressableScale extends StatefulWidget {
+  const _PressableScale({required this.child, required this.onTap});
+
+  final Widget child;
+  final VoidCallback onTap;
+
+  @override
+  State<_PressableScale> createState() => _PressableScaleState();
+}
+
+class _PressableScaleState extends State<_PressableScale> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed == value) return;
+    setState(() {
+      _pressed = value;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.onTap,
+      onTapDown: (_) => _setPressed(true),
+      onTapCancel: () => _setPressed(false),
+      onTapUp: (_) => _setPressed(false),
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 130),
+        curve: Curves.easeOutCubic,
+        scale: _pressed ? 0.985 : 1,
+        child: widget.child,
       ),
     );
   }
@@ -3053,6 +3109,7 @@ class _Airbnb3DImage extends StatefulWidget {
     required this.property,
     required this.photoCount,
     required this.rent,
+    required this.availabilityLabel,
     required this.isVerifiedPlus,
     required this.wishlistEnabled,
     required this.isWishlisted,
@@ -3063,6 +3120,7 @@ class _Airbnb3DImage extends StatefulWidget {
   final PropertyData property;
   final int photoCount;
   final String rent;
+  final String availabilityLabel;
   final bool isVerifiedPlus;
   final bool wishlistEnabled;
   final bool isWishlisted;
@@ -3121,10 +3179,10 @@ class _Airbnb3DImageState extends State<_Airbnb3DImage> {
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
-      aspectRatio: 1.48,
+      aspectRatio: 1.34,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(22),
           boxShadow: const <BoxShadow>[
             BoxShadow(
               color: Color(0x26111827),
@@ -3139,7 +3197,7 @@ class _Airbnb3DImageState extends State<_Airbnb3DImage> {
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(22),
           child: Stack(
             fit: StackFit.expand,
             children: <Widget>[
@@ -3178,11 +3236,11 @@ class _Airbnb3DImageState extends State<_Airbnb3DImage> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: <Color>[
-                      Color(0x66000000),
+                      Color(0x52000000),
                       Color(0x00000000),
-                      Color(0x99000000),
+                      Color(0xB3000000),
                     ],
-                    stops: <double>[0, 0.45, 1],
+                    stops: <double>[0, 0.46, 1],
                   ),
                 ),
               ),
@@ -3194,30 +3252,26 @@ class _Airbnb3DImageState extends State<_Airbnb3DImage> {
                   icon: Icons.home_work_rounded,
                 ),
               ),
-              Positioned(
-                right: 10,
-                top: 10,
-                child: _GlassBadge(label: widget.rent, rounded: false),
-              ),
               if (widget.isVerifiedPlus)
                 const Positioned(
                   left: 10,
-                  bottom: 10,
+                  top: 48,
                   child: _GlassBadge(
-                    label: 'Verified+',
+                    label: 'Verified',
                     icon: Icons.verified_rounded,
                   ),
                 ),
-              if (widget.wishlistEnabled)
-                Positioned(
-                  right: 9,
-                  bottom: 9,
-                  child: _WishlistButton(
-                    isSelected: widget.isWishlisted,
-                    onTap: widget.onWishlistToggle,
-                    compact: true,
-                  ),
-                ),
+              Positioned(
+                right: 10,
+                top: 10,
+                child: widget.wishlistEnabled
+                    ? _WishlistButton(
+                        isSelected: widget.isWishlisted,
+                        onTap: widget.onWishlistToggle,
+                        compact: true,
+                      )
+                    : const SizedBox.shrink(),
+              ),
               if (widget.photoCount > 1)
                 Positioned(
                   bottom: 12,
@@ -3312,16 +3366,16 @@ class _TinyInfoPill extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 190),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
         decoration: BoxDecoration(
           color: emphasized
-              ? _studioPrimary.withValues(alpha: 0.09)
-              : _studioSurface,
+              ? _studioPrimary.withValues(alpha: 0.10)
+              : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: emphasized
-                ? _studioPrimary.withValues(alpha: 0.18)
-                : _studioLine,
+                ? _studioPrimary.withValues(alpha: 0.14)
+                : const Color(0xFFE8ECF2),
           ),
         ),
         child: Row(
@@ -3340,7 +3394,7 @@ class _TinyInfoPill extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: emphasized ? _studioPrimary : _studioInk,
-                  fontSize: 10.5,
+                  fontSize: 11,
                   fontWeight: FontWeight.w800,
                 ),
               ),

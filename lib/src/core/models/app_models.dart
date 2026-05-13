@@ -956,6 +956,7 @@ class IncidentRecord {
 }
 
 String formatCompactDate(DateTime date) {
+  final DateTime localDate = date.toLocal();
   const List<String> months = <String>[
     'Jan',
     'Feb',
@@ -970,12 +971,13 @@ String formatCompactDate(DateTime date) {
     'Nov',
     'Dec',
   ];
-  return '${date.day} ${months[date.month - 1]} ${date.year}';
+  return '${localDate.day} ${months[localDate.month - 1]} ${localDate.year}';
 }
 
 String formatClock(DateTime date) {
-  final int hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
-  final String minute = date.minute.toString().padLeft(2, '0');
-  final String suffix = date.hour >= 12 ? 'PM' : 'AM';
+  final DateTime localDate = date.toLocal();
+  final int hour = localDate.hour % 12 == 0 ? 12 : localDate.hour % 12;
+  final String minute = localDate.minute.toString().padLeft(2, '0');
+  final String suffix = localDate.hour >= 12 ? 'PM' : 'AM';
   return '$hour:$minute $suffix';
 }

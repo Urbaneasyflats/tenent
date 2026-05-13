@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'core/api/api_client.dart';
@@ -5,6 +7,7 @@ import 'core/api/auth_service.dart';
 import 'core/api/auth_storage.dart';
 import 'core/api/vendor_service.dart';
 import 'core/models/app_models.dart';
+import 'core/services/app_update_service.dart';
 import 'core/services/connectivity_service.dart';
 import 'core/services/push_notification_service.dart';
 import 'core/theme/app_theme.dart';
@@ -71,6 +74,8 @@ class _ResidentAppState extends State<ResidentApp> {
     PushNotificationService.initialize(
       onNotificationTap: _handleNotificationTap,
     ).catchError((_) {});
+
+    unawaited(AppUpdateService.checkForPlayStoreUpdate());
   }
 
   void _handleNotificationTap() {
