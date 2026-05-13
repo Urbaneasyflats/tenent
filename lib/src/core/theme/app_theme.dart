@@ -31,6 +31,13 @@ class AppTheme {
 
   static final ThemeData lightTheme = ThemeData(
     useMaterial3: true,
+    fontFamily: 'Inter',
+    fontFamilyFallback: const <String>[
+      'SF Pro Display',
+      'SF Pro Text',
+      'Roboto',
+      'Arial',
+    ],
     colorScheme: const ColorScheme(
       brightness: Brightness.light,
       primary: primary,

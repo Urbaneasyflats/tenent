@@ -21,19 +21,23 @@ Future<void> _onBackgroundMessage(RemoteMessage message) async {
 class PushNotificationService {
   PushNotificationService._();
 
-  static const String _channelId = 'urbaneasyflats_main';
+  static const String _channelId = 'urbaneasyflats_main_bell';
   static const String _channelName = 'UrbanEasyFlats Alerts';
+  static const String _notificationSound = 'notification_bell';
+  static const String _notificationLogo = 'notification_logo';
 
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
   static const AndroidNotificationChannel _androidChannel =
       AndroidNotificationChannel(
-    _channelId,
-    _channelName,
-    importance: Importance.high,
-    enableVibration: true,
-  );
+        _channelId,
+        _channelName,
+        importance: Importance.high,
+        enableVibration: true,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(_notificationSound),
+      );
 
   static VoidCallback? _onNotificationTap;
   static bool _initialized = false;
@@ -50,7 +54,7 @@ class PushNotificationService {
 
     await _setupLocalNotifications();
     await _requestPermission();
-    await _registerToken();
+    unawaited(_registerTokenWithRetry());
 
     // Re-register when token rotates (e.g. app reinstall, token expiry).
     FirebaseMessaging.instance.onTokenRefresh.listen((String token) {
@@ -67,8 +71,8 @@ class PushNotificationService {
     });
 
     // App was terminated and user tapped the notification to launch it.
-    final RemoteMessage? initialMessage =
-        await FirebaseMessaging.instance.getInitialMessage();
+    final RemoteMessage? initialMessage = await FirebaseMessaging.instance
+        .getInitialMessage();
     if (initialMessage != null) {
       // Defer until the first frame is rendered and navigator is ready.
       Future.delayed(const Duration(milliseconds: 300), () {
@@ -82,16 +86,13 @@ class PushNotificationService {
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings iosSettings =
         DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
-    );
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        );
 
     await _localNotifications.initialize(
-      const InitializationSettings(
-        android: androidSettings,
-        iOS: iosSettings,
-      ),
+      const InitializationSettings(android: androidSettings, iOS: iosSettings),
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         // User tapped the local notification shown in the foreground.
         _onNotificationTap?.call();
@@ -102,17 +103,14 @@ class PushNotificationService {
     // foreground notifications show as heads-up banners.
     await _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(_androidChannel);
   }
 
   static Future<void> _requestPermission() async {
-    final NotificationSettings settings =
-        await FirebaseMessaging.instance.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    final NotificationSettings settings = await FirebaseMessaging.instance
+        .requestPermission(alert: true, badge: true, sound: true);
 
     if (kDebugMode) {
       debugPrint(
@@ -121,18 +119,36 @@ class PushNotificationService {
     }
   }
 
-  static Future<void> _registerToken() async {
-    try {
-      final String? token = await FirebaseMessaging.instance.getToken();
-      if (token != null && token.isNotEmpty) {
+  static Future<void> _registerTokenWithRetry() async {
+    const List<Duration> retryDelays = <Duration>[
+      Duration.zero,
+      Duration(seconds: 5),
+      Duration(seconds: 15),
+      Duration(seconds: 45),
+    ];
+
+    for (final Duration delay in retryDelays) {
+      if (delay > Duration.zero) {
+        await Future<void>.delayed(delay);
+      }
+
+      try {
+        final String? token = await FirebaseMessaging.instance.getToken();
+        if (token == null || token.isEmpty) {
+          continue;
+        }
+
         await AuthService.registerPushToken(token);
         if (kDebugMode) {
-          debugPrint('PushNotifications: token registered (${token.substring(0, 20)}…)');
+          debugPrint(
+            'PushNotifications: token registered (${token.substring(0, 20)}…)',
+          );
         }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('PushNotifications: token registration failed — $e');
+        return;
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('PushNotifications: token registration failed — $e');
+        }
       }
     }
   }
@@ -151,7 +167,9 @@ class PushNotificationService {
           _channelName,
           importance: Importance.high,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          largeIcon: DrawableResourceAndroidBitmap(_notificationLogo),
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound(_notificationSound),
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,

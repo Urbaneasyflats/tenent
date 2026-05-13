@@ -967,7 +967,7 @@ class _SupportPageState extends State<SupportPage> {
     String ticketType = (_vendor?.societyId?.isNotEmpty ?? false)
         ? 'society'
         : 'property';
-    String selectedTypeId = '';
+    String? selectedTypeId;
     bool ticketTypeTouched = false;
     int category = 1;
     int priority = 2;
@@ -1017,13 +1017,31 @@ class _SupportPageState extends State<SupportPage> {
       return '$property$tenant$owner';
     }
 
+    List<ResidentRecord> uniqueResidents(List<ResidentRecord> records) {
+      final Set<String> seen = <String>{};
+      return records.where((ResidentRecord record) {
+        final String id = record.id.trim();
+        return id.isNotEmpty && seen.add(id);
+      }).toList();
+    }
+
+    List<RentalContractRecord> uniqueContracts(
+      List<RentalContractRecord> records,
+    ) {
+      final Set<String> seen = <String>{};
+      return records.where((RentalContractRecord record) {
+        final String id = record.id.trim();
+        return id.isNotEmpty && seen.add(id);
+      }).toList();
+    }
+
     Future<void> loadTargets(
       StateSetter setModalState, {
       bool loadAll = false,
     }) async {
       safeSetModalState(setModalState, () {
         isLoadingTargets = true;
-        selectedTypeId = '';
+        selectedTypeId = null;
       });
 
       // Initial load fetches both sets so the "Ticket For" radio controls
@@ -1035,9 +1053,11 @@ class _SupportPageState extends State<SupportPage> {
             limit: 100,
             tenantVendorId: _vendor?.vendorId,
           );
-          residentOptions = result.residents.where((ResidentRecord record) {
-            return record.status && record.societyId.isNotEmpty;
-          }).toList();
+          residentOptions = uniqueResidents(
+            result.residents.where((ResidentRecord record) {
+              return record.status && record.societyId.isNotEmpty;
+            }).toList(),
+          );
         } catch (_) {
           residentOptions = <ResidentRecord>[];
         }
@@ -1049,7 +1069,7 @@ class _SupportPageState extends State<SupportPage> {
               await RentalContractService.filterTenantRentalContracts(
                 limit: 100,
               );
-          contractOptions = result.contracts;
+          contractOptions = uniqueContracts(result.contracts);
         } catch (_) {
           contractOptions = <RentalContractRecord>[];
         }
@@ -1069,8 +1089,8 @@ class _SupportPageState extends State<SupportPage> {
         }
         isLoadingTargets = false;
         selectedTypeId = ticketType == 'society'
-            ? (residentOptions.isNotEmpty ? residentOptions.first.id : '')
-            : (contractOptions.isNotEmpty ? contractOptions.first.id : '');
+            ? (residentOptions.isNotEmpty ? residentOptions.first.id : null)
+            : (contractOptions.isNotEmpty ? contractOptions.first.id : null);
       });
     }
 
@@ -1133,7 +1153,7 @@ class _SupportPageState extends State<SupportPage> {
 
               if (titleController.text.trim().isEmpty ||
                   descriptionController.text.trim().isEmpty ||
-                  selectedTypeId.isEmpty ||
+                  (selectedTypeId ?? '').isEmpty ||
                   ticketTypeIdForApi.isEmpty) {
                 _showMessage(
                   'Title, description, and the related resident or contract are required.',
@@ -1243,7 +1263,7 @@ class _SupportPageState extends State<SupportPage> {
                                       ticketTypeTouched = true;
                                       setModalState(() {
                                         ticketType = value ?? 'society';
-                                        selectedTypeId = '';
+                                        selectedTypeId = null;
                                       });
                                       loadTargets(setModalState);
                                     },
@@ -1263,7 +1283,7 @@ class _SupportPageState extends State<SupportPage> {
                                       ticketTypeTouched = true;
                                       setModalState(() {
                                         ticketType = value ?? 'property';
-                                        selectedTypeId = '';
+                                        selectedTypeId = null;
                                       });
                                       loadTargets(setModalState);
                                     },
@@ -1288,7 +1308,7 @@ class _SupportPageState extends State<SupportPage> {
                     ],
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: selectedTypeId.isEmpty ? null : selectedTypeId,
+                      value: selectedTypeId,
                       isExpanded: true,
                       decoration: InputDecoration(
                         labelText: ticketType == 'society'
@@ -1297,7 +1317,7 @@ class _SupportPageState extends State<SupportPage> {
                       ),
                       items: <DropdownMenuItem<String>>[
                         DropdownMenuItem<String>(
-                          value: '',
+                          enabled: false,
                           child: Text(
                             isLoadingTargets
                                 ? 'Loading...'
@@ -1319,16 +1339,15 @@ class _SupportPageState extends State<SupportPage> {
                                         ),
                                   )
                                 : contractOptions.map(
-                                    (
-                                      RentalContractRecord contract,
-                                    ) => DropdownMenuItem<String>(
-                                      value: contract.id,
-                                      child: Text(
-                                        contractTicketLabel(contract),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
+                                    (RentalContractRecord contract) =>
+                                        DropdownMenuItem<String>(
+                                          value: contract.id,
+                                          child: Text(
+                                            contractTicketLabel(contract),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
                                   ))
                             .toList(),
                       ],
@@ -1336,7 +1355,7 @@ class _SupportPageState extends State<SupportPage> {
                           ? null
                           : (String? value) {
                               setModalState(() {
-                                selectedTypeId = value ?? '';
+                                selectedTypeId = value;
                               });
                             },
                     ),

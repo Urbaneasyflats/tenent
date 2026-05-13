@@ -18,9 +18,9 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.urbaneasy.urbantenant"
+    namespace = "com.urbaneasy.resident_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "26.3.11579264"
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -33,8 +33,8 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.urbaneasy.urbantenant"
-        minSdk = 23
+        applicationId = "com.urbaneasy.resident_app"
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

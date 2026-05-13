@@ -1,4 +1,4 @@
-package com.urbaneasy.urbantenant
+package com.urbaneasy.resident_app
 
 import io.flutter.embedding.android.FlutterActivity
 

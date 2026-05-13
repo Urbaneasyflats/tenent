@@ -16,7 +16,7 @@ class SupportService {
     required int priority,
     String? imageId,
   }) async {
-    return ApiClient.instance.post(
+    final ApiResponse response = await ApiClient.instance.post(
       ApiConfig.createSupportTicket,
       <String, dynamic>{
         'Vendor_Ticket_Type': ticketType,
@@ -29,6 +29,14 @@ class SupportService {
         if (imageId != null) 'ImageID': imageId,
       },
     );
+
+    if (!response.success) {
+      throw Exception(
+        response.status ?? response.message ?? 'Failed to create support ticket.',
+      );
+    }
+
+    return response;
   }
 
   /// Filter support tickets for tenant.
@@ -141,11 +149,15 @@ class SupportService {
       return (tickets: <TicketRecord>[], count: 0);
     }
 
+    if (response.data is! List<dynamic>) {
+      return (tickets: <TicketRecord>[], count: 0);
+    }
+
     final List<dynamic> dataList = response.data as List<dynamic>;
     final List<TicketRecord> tickets = dataList
-        .map((dynamic item) =>
-            SupportTicketData.fromJson(item as Map<String, dynamic>)
-                .toTicketRecord())
+        .whereType<Map<String, dynamic>>()
+        .map((Map<String, dynamic> item) =>
+            SupportTicketData.fromJson(item).toTicketRecord())
         .toList();
 
     return (tickets: tickets, count: response.count ?? tickets.length);

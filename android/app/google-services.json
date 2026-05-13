@@ -7,6 +7,63 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:403657963841:android:89b3a04a6f602b5c5d49c0",
+        "android_client_info": {
+          "package_name": "com.stay.urbaneasyflats_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYc03x04xoZ6ND6NE4x_d4FhDibA6Q9BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:403657963841:android:9d7dd964ce6675a05d49c0",
+        "android_client_info": {
+          "package_name": "com.urbaneasy.manager"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYc03x04xoZ6ND6NE4x_d4FhDibA6Q9BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:403657963841:android:70aae2cb4e4c73055d49c0",
+        "android_client_info": {
+          "package_name": "com.urbaneasy.resident_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYc03x04xoZ6ND6NE4x_d4FhDibA6Q9BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:403657963841:android:8a8b3192b4f4cb895d49c0",
         "android_client_info": {
           "package_name": "com.urbaneasy.urbantenant"

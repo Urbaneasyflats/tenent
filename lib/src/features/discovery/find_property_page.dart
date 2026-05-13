@@ -29,33 +29,17 @@ const Map<int, String> _filterPropertyTypeLabels = <int, String>{
   4: 'Commercial',
 };
 
-const Map<int, Map<int, String>> _filterSubTypeLabels =
-    <int, Map<int, String>>{
-      1: <int, String>{
-        1: '1 BHK',
-        2: '2 BHK',
-        3: '3 BHK',
-        4: '4 BHK',
-        5: 'Studio',
-      },
-      2: <int, String>{
-        1: '2 BHK Villa',
-        2: '3 BHK Villa',
-        3: '4 BHK Villa',
-        4: 'Duplex Villa',
-      },
-      3: <int, String>{
-        1: 'Mens PG',
-        2: 'Womens PG',
-        3: 'Coliving',
-      },
-      4: <int, String>{
-        1: 'Office',
-        2: 'Retail',
-        3: 'Warehouse',
-        4: 'Showroom',
-      },
-    };
+const Map<int, Map<int, String>> _filterSubTypeLabels = <int, Map<int, String>>{
+  1: <int, String>{1: '1 BHK', 2: '2 BHK', 3: '3 BHK', 4: '4 BHK', 5: 'Studio'},
+  2: <int, String>{
+    1: '2 BHK Villa',
+    2: '3 BHK Villa',
+    3: '4 BHK Villa',
+    4: 'Duplex Villa',
+  },
+  3: <int, String>{1: 'Mens PG', 2: 'Womens PG', 3: 'Coliving'},
+  4: <int, String>{1: 'Office', 2: 'Retail', 3: 'Warehouse', 4: 'Showroom'},
+};
 
 const Map<int, String> _filterPgSharingLabels = <int, String>{
   1: 'Single',
@@ -96,11 +80,6 @@ double _landingTextScale(BuildContext context) {
 double _landingCardWidth(BuildContext context) {
   final double screenWidth = MediaQuery.sizeOf(context).width;
   return (screenWidth * 0.74).clamp(260.0, 330.0).toDouble();
-}
-
-double _landingCardHeight(BuildContext context) {
-  final double scale = _landingTextScale(context);
-  return (428 + ((scale - 1) * 110)).clamp(428.0, 540.0).toDouble();
 }
 
 double _promoBannerMinHeight(BuildContext context) {
@@ -453,10 +432,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
                 ],
                 const SizedBox(height: 18),
                 if (_isLoading && _properties.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 72),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
+                  const _PropertyLoadingSkeleton()
                 else if (_errorMessage != null)
                   _StatePanel(
                     icon: Icons.error_outline_rounded,
@@ -520,10 +496,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
             ],
           ),
           clipBehavior: Clip.antiAlias,
-          child: Image.asset(
-            'assets/tenenet_logo.jpg',
-            fit: BoxFit.cover,
-          ),
+          child: Image.asset('assets/tenenet_logo.jpg', fit: BoxFit.cover),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -613,9 +586,9 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
         Expanded(
           child: Container(
             height: 48,
-              decoration: BoxDecoration(
-                color: _studioSurface,
-                borderRadius: BorderRadius.circular(23),
+            decoration: BoxDecoration(
+              color: _studioSurface,
+              borderRadius: BorderRadius.circular(23),
               border: Border.all(color: _studioLine),
               boxShadow: const <BoxShadow>[
                 BoxShadow(
@@ -692,14 +665,10 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: _showWishlistOnly
-              ? const Color(0xFFFFEEF2)
-              : Colors.white,
+          color: _showWishlistOnly ? const Color(0xFFFFEEF2) : Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: _showWishlistOnly
-                ? const Color(0xFFFDA4AF)
-                : _studioLine,
+            color: _showWishlistOnly ? const Color(0xFFFDA4AF) : _studioLine,
           ),
         ),
         child: Row(
@@ -738,8 +707,9 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
 
   Widget _buildPromoBanner(ThemeData theme) {
     final double textScale = _landingTextScale(context);
-    final double promoButtonHeight =
-        (32 + ((textScale - 1) * 14)).clamp(32.0, 48.0).toDouble();
+    final double promoButtonHeight = (32 + ((textScale - 1) * 14))
+        .clamp(32.0, 48.0)
+        .toDouble();
 
     return Container(
       margin: const EdgeInsets.only(top: 0, bottom: 18),
@@ -831,7 +801,6 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
   ) {
     const List<int> order = <int>[3, 2, 1, 4];
     final double cardWidth = _landingCardWidth(context);
-    final double cardHeight = _landingCardHeight(context);
     final Map<int, List<_PropertyDisplayGroup>> grouped =
         <int, List<_PropertyDisplayGroup>>{};
     for (final _PropertyDisplayGroup group in groups) {
@@ -866,30 +835,34 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
           },
         ),
         const SizedBox(height: 8),
-        SizedBox(
-          height: cardHeight,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (BuildContext context, int index) {
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          clipBehavior: Clip.none,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: List<Widget>.generate(items.length, (int index) {
               final _PropertyDisplayGroup group = items[index];
               final PropertyData property = group.primary;
-              return SizedBox(
-                width: cardWidth,
-                child: _StudioPropertyCard(
-                  group: group,
-                  property: property,
-                  fallbackImage: _fallbackImage,
-                  onDetails: () => _showPropertyDetails(group),
-                  onEnquiry: () => _showEnquirySheet(property),
-                  wishlistEnabled: widget.enableWishlist,
-                  isWishlisted: _isGroupWishlisted(group),
-                  onWishlistToggle: () => _toggleWishlist(property),
+              return Padding(
+                padding: EdgeInsets.only(
+                  right: index == items.length - 1 ? 0 : 12,
+                ),
+                child: SizedBox(
+                  width: cardWidth,
+                  child: _StudioPropertyCard(
+                    group: group,
+                    property: property,
+                    fallbackImage: _fallbackImage,
+                    onDetails: () => _showPropertyDetails(group),
+                    onEnquiry: () => _showEnquirySheet(property),
+                    wishlistEnabled: widget.enableWishlist,
+                    isWishlisted: _isGroupWishlisted(group),
+                    onWishlistToggle: () => _toggleWishlist(property),
+                  ),
                 ),
               );
-            },
+            }),
           ),
         ),
         const SizedBox(height: 8),
@@ -920,24 +893,22 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
         },
       ),
       const SizedBox(height: 12),
-      ...groups.map(
-        (_PropertyDisplayGroup group) {
-          final PropertyData property = group.primary;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: _StudioPropertyCard(
-              group: group,
-              property: property,
-              fallbackImage: _fallbackImage,
-              onDetails: () => _showPropertyDetails(group),
-              onEnquiry: () => _showEnquirySheet(property),
-              wishlistEnabled: widget.enableWishlist,
-              isWishlisted: _isGroupWishlisted(group),
-              onWishlistToggle: () => _toggleWishlist(property),
-            ),
-          );
-        },
-      ),
+      ...groups.map((_PropertyDisplayGroup group) {
+        final PropertyData property = group.primary;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: _StudioPropertyCard(
+            group: group,
+            property: property,
+            fallbackImage: _fallbackImage,
+            onDetails: () => _showPropertyDetails(group),
+            onEnquiry: () => _showEnquirySheet(property),
+            wishlistEnabled: widget.enableWishlist,
+            isWishlisted: _isGroupWishlisted(group),
+            onWishlistToggle: () => _toggleWishlist(property),
+          ),
+        );
+      }),
     ];
   }
 
@@ -957,24 +928,22 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
         },
       ),
       const SizedBox(height: 12),
-      ...groups.map(
-        (_PropertyDisplayGroup group) {
-          final PropertyData property = group.primary;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: _StudioPropertyCard(
-              group: group,
-              property: property,
-              fallbackImage: _fallbackImage,
-              onDetails: () => _showPropertyDetails(group),
-              onEnquiry: () => _showEnquirySheet(property),
-              wishlistEnabled: widget.enableWishlist,
-              isWishlisted: _isGroupWishlisted(group),
-              onWishlistToggle: () => _toggleWishlist(property),
-            ),
-          );
-        },
-      ),
+      ...groups.map((_PropertyDisplayGroup group) {
+        final PropertyData property = group.primary;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: _StudioPropertyCard(
+            group: group,
+            property: property,
+            fallbackImage: _fallbackImage,
+            onDetails: () => _showPropertyDetails(group),
+            onEnquiry: () => _showEnquirySheet(property),
+            wishlistEnabled: widget.enableWishlist,
+            isWishlisted: _isGroupWishlisted(group),
+            onWishlistToggle: () => _toggleWishlist(property),
+          ),
+        );
+      }),
     ];
   }
 
@@ -987,11 +956,10 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setSheetState) {
             final ThemeData theme = Theme.of(context);
-            final Map<int, String> subTypeOptions =
-                _propertyType == null
-                    ? const <int, String>{}
-                    : (_filterSubTypeLabels[_propertyType] ??
-                          const <int, String>{});
+            final Map<int, String> subTypeOptions = _propertyType == null
+                ? const <int, String>{}
+                : (_filterSubTypeLabels[_propertyType] ??
+                      const <int, String>{});
             return Padding(
               padding: EdgeInsets.fromLTRB(
                 16,
@@ -1235,17 +1203,13 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
                           selected: selected,
                           showCheckmark: false,
                           labelStyle: theme.textTheme.labelLarge?.copyWith(
-                            color: selected
-                                ? Colors.white
-                                : _studioInk,
+                            color: selected ? Colors.white : _studioInk,
                             fontWeight: FontWeight.w800,
                           ),
                           selectedColor: _studioPrimary,
                           backgroundColor: _studioSurface,
                           side: BorderSide(
-                            color: selected
-                                ? _studioPrimary
-                                : _studioLine,
+                            color: selected ? _studioPrimary : _studioLine,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(999),
@@ -1417,8 +1381,9 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
     }
 
     final Set<String> previousIds = Set<String>.from(_wishlistIds);
-    final List<PropertyData> previousProperties =
-        List<PropertyData>.from(_wishlistProperties);
+    final List<PropertyData> previousProperties = List<PropertyData>.from(
+      _wishlistProperties,
+    );
     final Set<String> nextIds = Set<String>.from(_wishlistIds);
     final bool removed = nextIds.remove(id);
     if (!removed) {
@@ -1791,10 +1756,8 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         fullscreenDialog: true,
-        builder: (_) => _FullImageGallery(
-          images: images,
-          initialIndex: initialIndex,
-        ),
+        builder: (_) =>
+            _FullImageGallery(images: images, initialIndex: initialIndex),
       ),
     );
   }
@@ -1803,10 +1766,7 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final PropertyData property = _selectedProperty;
-    final List<String> images = _imagesFor(
-      property,
-      widget.fallbackImage,
-    );
+    final List<String> images = _imagesFor(property, widget.fallbackImage);
     final List<String> amenities = _amenitiesFor(property);
     final int? vacancy = property.noOfVacancy;
     final double heroHeight = (MediaQuery.sizeOf(context).height * 0.48)
@@ -1815,115 +1775,112 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
 
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
-        textScaler: MediaQuery.textScalerOf(context).clamp(
-          minScaleFactor: 0.9,
-          maxScaleFactor: 1.0,
-        ),
+        textScaler: MediaQuery.textScalerOf(
+          context,
+        ).clamp(minScaleFactor: 0.9, maxScaleFactor: 1.0),
       ),
       child: SizedBox(
         height: MediaQuery.sizeOf(context).height,
         child: Material(
           color: Colors.white,
           child: ListView(
-          padding: EdgeInsets.only(
-            bottom: 18 + MediaQuery.of(context).viewInsets.bottom,
-          ),
-          children: <Widget>[
-            SizedBox(
-              height: heroHeight,
-              child: Stack(
-                fit: StackFit.expand,
-                children: <Widget>[
-                  PageView.builder(
-                    controller: _detailImageController,
-                    itemCount: images.length,
-                    onPageChanged: (int index) {
-                      setState(() {
-                        _imageIndex = index;
-                      });
-                    },
-                    itemBuilder: (BuildContext context, int index) {
-                      return GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => _openImageGallery(images, index),
-                        child: _DetailHeroImage(
-                          imageUrl: images[index],
-                        ),
-                      );
-                    },
-                  ),
-                  const IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: <Color>[
-                            Color(0x22000000),
-                            Color(0x08000000),
-                            Color(0xD0000000),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: MediaQuery.paddingOf(context).top + 18,
-                    left: 22,
-                    child: IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: const Color(0xFF111827),
-                        fixedSize: const Size(56, 56),
-                        shape: const CircleBorder(),
-                        elevation: 6,
-                        shadowColor: Colors.black.withValues(alpha: 0.18),
-                      ),
-                      icon: const Icon(Icons.chevron_left_rounded, size: 34),
-                    ),
-                  ),
-                  Positioned(
-                    top: MediaQuery.paddingOf(context).top + 24,
-                    right: 22,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        if (widget.wishlistEnabled) ...<Widget>[
-                          _WishlistButton(
-                            isSelected: widget.isWishlisted,
-                            onTap: widget.onWishlistToggle,
-                          ),
-                          const SizedBox(width: 10),
-                        ],
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => _openImageGallery(images, _imageIndex),
-                          child: _GlassBadge(
-                            label: images.length > 1
-                                ? '${_imageIndex + 1}/${images.length} photos'
-                                : 'View photo',
-                            icon: Icons.photo_library_outlined,
-                            rounded: false,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (images.length > 1)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 16,
-                      child: _HeroImageDots(
-                        count: images.length,
-                        activeIndex: _imageIndex,
-                      ),
-                    ),
-                ],
-              ),
+            padding: EdgeInsets.only(
+              bottom: 18 + MediaQuery.of(context).viewInsets.bottom,
             ),
-            Container(
+            children: <Widget>[
+              SizedBox(
+                height: heroHeight,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: <Widget>[
+                    PageView.builder(
+                      controller: _detailImageController,
+                      itemCount: images.length,
+                      onPageChanged: (int index) {
+                        setState(() {
+                          _imageIndex = index;
+                        });
+                      },
+                      itemBuilder: (BuildContext context, int index) {
+                        return GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _openImageGallery(images, index),
+                          child: _DetailHeroImage(imageUrl: images[index]),
+                        );
+                      },
+                    ),
+                    const IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: <Color>[
+                              Color(0x22000000),
+                              Color(0x08000000),
+                              Color(0xD0000000),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: MediaQuery.paddingOf(context).top + 18,
+                      left: 22,
+                      child: IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF111827),
+                          fixedSize: const Size(56, 56),
+                          shape: const CircleBorder(),
+                          elevation: 6,
+                          shadowColor: Colors.black.withValues(alpha: 0.18),
+                        ),
+                        icon: const Icon(Icons.chevron_left_rounded, size: 34),
+                      ),
+                    ),
+                    Positioned(
+                      top: MediaQuery.paddingOf(context).top + 24,
+                      right: 22,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          if (widget.wishlistEnabled) ...<Widget>[
+                            _WishlistButton(
+                              isSelected: widget.isWishlisted,
+                              onTap: widget.onWishlistToggle,
+                            ),
+                            const SizedBox(width: 10),
+                          ],
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _openImageGallery(images, _imageIndex),
+                            child: _GlassBadge(
+                              label: images.length > 1
+                                  ? '${_imageIndex + 1}/${images.length} photos'
+                                  : 'View photo',
+                              icon: Icons.photo_library_outlined,
+                              rounded: false,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (images.length > 1)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 16,
+                        child: _HeroImageDots(
+                          count: images.length,
+                          activeIndex: _imageIndex,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Container(
                 padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
                 color: Colors.white,
                 child: Column(
@@ -2026,7 +1983,9 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                         ),
                         _OverviewCardItem(
                           icon: Icons.meeting_room_outlined,
-                          label: property.propertyType == 3 ? 'Beds' : 'Vacancy',
+                          label: property.propertyType == 3
+                              ? 'Beds'
+                              : 'Vacancy',
                           value: _availabilityShortLabel(property),
                           tint: const Color(0xFFE5E7EB),
                           iconColor: (vacancy ?? 1) > 0
@@ -2084,9 +2043,7 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                     if (_hasMapLocation(property)) ...<Widget>[
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: _MapIconAction(
-                          onTap: () => _openMap(property),
-                        ),
+                        child: _MapIconAction(onTap: () => _openMap(property)),
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -2095,8 +2052,8 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                       child: FilledButton.icon(
                         onPressed: () => widget.onEnquiry(property),
                         style: FilledButton.styleFrom(
-                        backgroundColor: _studioPrimary,
-                        foregroundColor: Colors.white,
+                          backgroundColor: _studioPrimary,
+                          foregroundColor: Colors.white,
                           minimumSize: const Size.fromHeight(56),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -2112,8 +2069,8 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                     ),
                   ],
                 ),
-            ),
-          ],
+              ),
+            ],
           ),
         ),
       ),
@@ -2222,9 +2179,7 @@ class _ConfigurationSelector extends StatelessWidget {
               onSelected: (_) => onSelected(property),
               selectedColor: _studioPrimary,
               backgroundColor: _studioSurface,
-              side: BorderSide(
-                color: selected ? _studioPrimary : _studioLine,
-              ),
+              side: BorderSide(color: selected ? _studioPrimary : _studioLine),
               labelStyle: TextStyle(
                 color: selected ? Colors.white : _studioInk,
                 fontWeight: FontWeight.w900,
@@ -2255,7 +2210,7 @@ class _ConfigurationChipStrip extends StatelessWidget {
       children: labels
           .map(
             (String label) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
               decoration: BoxDecoration(
                 color: _studioPrimary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(999),
@@ -2269,8 +2224,8 @@ class _ConfigurationChipStrip extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: _studioPrimary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
@@ -2302,11 +2257,7 @@ class _MapIconAction extends StatelessWidget {
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(
-                Icons.map_outlined,
-                color: _studioPrimary,
-                size: 20,
-              ),
+              Icon(Icons.map_outlined, color: _studioPrimary, size: 20),
               SizedBox(width: 8),
               Text(
                 'Open in maps',
@@ -2325,10 +2276,7 @@ class _MapIconAction extends StatelessWidget {
 }
 
 class _FullImageGallery extends StatefulWidget {
-  const _FullImageGallery({
-    required this.images,
-    required this.initialIndex,
-  });
+  const _FullImageGallery({required this.images, required this.initialIndex});
 
   final List<String> images;
   final int initialIndex;
@@ -2469,9 +2417,7 @@ class _HeroImageDots extends StatelessWidget {
           width: active ? 18 : 7,
           height: 7,
           decoration: BoxDecoration(
-            color: active
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.48),
+            color: active ? Colors.white : Colors.white.withValues(alpha: 0.48),
             borderRadius: BorderRadius.circular(999),
             boxShadow: const <BoxShadow>[
               BoxShadow(
@@ -2846,10 +2792,9 @@ class _PurpleGradientButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final double textScale = _landingTextScale(context);
     final double baseHeight = height ?? (compact ? 38 : 48);
-    final double resolvedHeight =
-        (baseHeight + ((textScale - 1) * 16))
-            .clamp(baseHeight, baseHeight + 24)
-            .toDouble();
+    final double resolvedHeight = (baseHeight + ((textScale - 1) * 16))
+        .clamp(baseHeight, baseHeight + 24)
+        .toDouble();
     final double resolvedRadius = borderRadius ?? (compact ? 999 : 16);
 
     return Material(
@@ -2891,8 +2836,8 @@ class _PurpleGradientButton extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: compact ? 13 : 12.5,
-                    fontWeight: FontWeight.w900,
+                    fontSize: compact ? 12.5 : 12,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
@@ -2930,265 +2875,178 @@ class _StudioPropertyCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final List<String> images = _imagesFor(property, fallbackImage);
     final int? vacancy = property.noOfVacancy;
-    final List<String> configLabels = group.configLabels;
+    final List<String> configLabels = group.configLabels.take(3).toList();
+    final String location = _locationLabel(property);
+    final String priceLabel = _priceRangeLabel(group);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onDetails,
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: _studioLine),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x1F1F2937),
-              blurRadius: 26,
-              offset: Offset(0, 16),
-            ),
-            BoxShadow(
-              color: Color(0x0FFFFFFF),
-              blurRadius: 10,
-              offset: Offset(0, -3),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-            child: _Airbnb3DImage(
-              images: images,
-              property: property,
-              photoCount: images.length,
-              rent: _priceRangeLabel(group),
-              isVerifiedPlus: group.isVerifiedPlus,
-              wishlistEnabled: wishlistEnabled,
-              isWishlisted: isWishlisted,
-              onWishlistToggle: onWishlistToggle,
-            ),
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOutCubic,
+        scale: 1,
+        child: Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFF1F2F4)),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x1A111827),
+                blurRadius: 24,
+                offset: Offset(0, 14),
+              ),
+              BoxShadow(
+                color: Color(0x0D6C5CE7),
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 9, 12, 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                child: _Airbnb3DImage(
+                  images: images,
+                  property: property,
+                  photoCount: images.length,
+                  rent: priceLabel,
+                  isVerifiedPlus: group.isVerifiedPlus,
+                  wishlistEnabled: wishlistEnabled,
+                  isWishlisted: isWishlisted,
+                  onWishlistToggle: onWishlistToggle,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        group.displayTitle.isEmpty
-                            ? 'Property'
-                            : group.displayTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: _studioInk,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 14,
-                          letterSpacing: -0.1,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            group.displayTitle.isEmpty
+                                ? 'Property'
+                                : group.displayTitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: _studioInk,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14.5,
+                              height: 1.15,
+                              letterSpacing: 0,
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        _TinyRatingBadge(
+                          label: _availabilityShortLabel(property),
+                          positive: (vacancy ?? 1) > 0,
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    _TinyRatingBadge(
-                      label: _availabilityShortLabel(property),
-                      positive: (vacancy ?? 1) > 0,
+                    const SizedBox(height: 5),
+                    _CompactMetaLine(
+                      icon: Icons.location_on_outlined,
+                      label: location,
                     ),
-                    if (wishlistEnabled) ...<Widget>[
-                      const SizedBox(width: 6),
-                      _WishlistButton(
-                        isSelected: isWishlisted,
-                        onTap: onWishlistToggle,
-                        compact: true,
-                      ),
+                    const SizedBox(height: 4),
+                    _CompactMetaLine(
+                      icon: Icons.home_work_outlined,
+                      label: _configurationLabel(property),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 5,
+                      runSpacing: 5,
+                      children: <Widget>[
+                        _TinyInfoPill(
+                          icon: Icons.payments_outlined,
+                          label: priceLabel == 'Rent on request'
+                              ? priceLabel
+                              : '$priceLabel/mo',
+                          emphasized: true,
+                        ),
+                        if (_distanceLabel(property) != null)
+                          _TinyInfoPill(
+                            icon: Icons.near_me_rounded,
+                            label: _distanceLabel(property)!,
+                          ),
+                        if (group.isVerifiedPlus)
+                          const _TinyInfoPill(
+                            icon: Icons.verified_rounded,
+                            label: 'Verified+',
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    if (configLabels.length > 1) ...<Widget>[
+                      _ConfigurationChipStrip(labels: configLabels),
+                      const SizedBox(height: 8),
                     ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: <Widget>[
-                    const Icon(
-                      Icons.location_on_outlined,
-                      size: 14,
-                      color: _studioMuted,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        _locationLabel(property),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: _studioMuted,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11.5,
-                          height: 1.15,
-                        ),
-                      ),
+                    _PurpleGradientButton(
+                      label: 'Enquire',
+                      onPressed: onEnquiry,
+                      height: 34,
+                      borderRadius: 12,
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: <Widget>[
-                    const Icon(
-                      Icons.home_work_outlined,
-                      size: 14,
-                      color: _studioMuted,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        _configurationLabel(property),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: _studioMuted,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11.5,
-                          height: 1.15,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: <Widget>[
-                    _TinyInfoPill(
-                      icon: Icons.payments_outlined,
-                      label: _priceRangeLabel(group) == 'Rent on request'
-                          ? 'Rent on request'
-                          : '${_priceRangeLabel(group)}/month',
-                    ),
-                    if (_distanceLabel(property) != null)
-                      _TinyInfoPill(
-                        icon: Icons.near_me_rounded,
-                        label: _distanceLabel(property)!,
-                      ),
-                    if (group.isVerifiedPlus)
-                      const _TinyInfoPill(
-                        icon: Icons.verified_rounded,
-                        label: 'Verified+',
-                      ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                if (configLabels.length > 1) ...<Widget>[
-                  _ConfigurationChipStrip(labels: configLabels.take(4).toList()),
-                  const SizedBox(height: 8),
-                ],
-                _PurpleGradientButton(
-                  label: 'Enquire Now',
-                  onPressed: onEnquiry,
-                  height: 38,
-                  borderRadius: 13,
-                ),
-              ],
-            ),
-          ),
-          ],
         ),
-      ),
-    );
-  }
-}
-/*
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            child: Row(
-              children: <Widget>[
-                const Icon(
-                  Icons.home_work_outlined,
-                  size: 14,
-                  color: _studioMuted,
-                ),
-                const SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    '${_subTypeLabel(property)} • Deposit ${_money(property.deposit)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: _studioMuted,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 11.5,
-                      height: 1.15,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                if (configLabels.isNotEmpty) ...<Widget>[
-                  _ConfigurationChipStrip(labels: configLabels.take(4).toList()),
-                  const SizedBox(height: 8),
-                ],
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: onDetails,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: _studioInk,
-                          side: const BorderSide(color: _studioLine),
-                          backgroundColor: _studioSurface,
-                          padding: const EdgeInsets.symmetric(vertical: 9),
-                          minimumSize: const Size(0, 38),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
-                          textStyle: const TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w900,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(13),
-                          ),
-                        ),
-                        child: const Text('Details'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _PurpleGradientButton(
-                        label: 'Enquire Now',
-                        onPressed: onEnquiry,
-                        height: 38,
-                        borderRadius: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
 }
 
-*/
+class _CompactMetaLine extends StatelessWidget {
+  const _CompactMetaLine({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Icon(icon, size: 13, color: _studioMuted),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: _studioMuted,
+              fontWeight: FontWeight.w600,
+              fontSize: 11.5,
+              height: 1.15,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _Airbnb3DImage extends StatefulWidget {
   const _Airbnb3DImage({
     required this.images,
@@ -3262,35 +3120,118 @@ class _Airbnb3DImageState extends State<_Airbnb3DImage> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 130,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x241F2937),
-            blurRadius: 22,
-            offset: Offset(0, 13),
+    return AspectRatio(
+      aspectRatio: 1.48,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x26111827),
+              blurRadius: 22,
+              offset: Offset(0, 13),
+            ),
+            BoxShadow(
+              color: Color(0x14A29BFE),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              PageView.builder(
+                controller: _pageController,
+                itemCount: widget.images.length,
+                onPageChanged: (int index) {
+                  setState(() {
+                    _imageIndex = index;
+                  });
+                },
+                itemBuilder: (BuildContext context, int index) {
+                  return TweenAnimationBuilder<double>(
+                    tween: Tween<double>(
+                      begin: index == _imageIndex ? 1.04 : 1,
+                      end: index == _imageIndex ? 1.08 : 1,
+                    ),
+                    duration: const Duration(milliseconds: 900),
+                    curve: Curves.easeOutCubic,
+                    builder:
+                        (BuildContext context, double scale, Widget? child) {
+                          return Transform.scale(scale: scale, child: child);
+                        },
+                    child: Image.network(
+                      widget.images[index],
+                      fit: BoxFit.cover,
+                      filterQuality: FilterQuality.high,
+                      errorBuilder: (_, __, ___) => _ImageFallback(),
+                    ),
+                  );
+                },
+              ),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: <Color>[
+                      Color(0x66000000),
+                      Color(0x00000000),
+                      Color(0x99000000),
+                    ],
+                    stops: <double>[0, 0.45, 1],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 10,
+                top: 10,
+                child: _GlassBadge(
+                  label: _subTypeLabel(widget.property),
+                  icon: Icons.home_work_rounded,
+                ),
+              ),
+              Positioned(
+                right: 10,
+                top: 10,
+                child: _GlassBadge(label: widget.rent, rounded: false),
+              ),
+              if (widget.isVerifiedPlus)
+                const Positioned(
+                  left: 10,
+                  bottom: 10,
+                  child: _GlassBadge(
+                    label: 'Verified+',
+                    icon: Icons.verified_rounded,
+                  ),
+                ),
+              if (widget.wishlistEnabled)
+                Positioned(
+                  right: 9,
+                  bottom: 9,
+                  child: _WishlistButton(
+                    isSelected: widget.isWishlisted,
+                    onTap: widget.onWishlistToggle,
+                    compact: true,
+                  ),
+                ),
+              if (widget.photoCount > 1)
+                Positioned(
+                  bottom: 12,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: _MiniPhotoDots(
+                      count: widget.photoCount,
+                      activeIndex: _imageIndex,
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: PageView.builder(
-          controller: _pageController,
-          itemCount: widget.images.length,
-          onPageChanged: (int index) {
-            setState(() {
-              _imageIndex = index;
-            });
-          },
-          itemBuilder: (BuildContext context, int index) {
-            return Image.network(
-              widget.images[index],
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _ImageFallback(),
-            );
-          },
         ),
       ),
     );
@@ -3298,10 +3239,7 @@ class _Airbnb3DImageState extends State<_Airbnb3DImage> {
 }
 
 class _MiniPhotoDots extends StatelessWidget {
-  const _MiniPhotoDots({
-    required this.count,
-    required this.activeIndex,
-  });
+  const _MiniPhotoDots({required this.count, required this.activeIndex});
 
   final int count;
   final int activeIndex;
@@ -3331,10 +3269,7 @@ class _MiniPhotoDots extends StatelessWidget {
 }
 
 class _TinyRatingBadge extends StatelessWidget {
-  const _TinyRatingBadge({
-    required this.label,
-    required this.positive,
-  });
+  const _TinyRatingBadge({required this.label, required this.positive});
 
   final String label;
   final bool positive;
@@ -3365,10 +3300,12 @@ class _TinyInfoPill extends StatelessWidget {
   const _TinyInfoPill({
     required this.icon,
     required this.label,
+    this.emphasized = false,
   });
 
   final IconData icon;
   final String label;
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
@@ -3377,14 +3314,24 @@ class _TinyInfoPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(
-          color: _studioSurface,
+          color: emphasized
+              ? _studioPrimary.withValues(alpha: 0.09)
+              : _studioSurface,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: _studioLine),
+          border: Border.all(
+            color: emphasized
+                ? _studioPrimary.withValues(alpha: 0.18)
+                : _studioLine,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(icon, size: 12, color: _studioPrimary),
+            Icon(
+              icon,
+              size: 12,
+              color: emphasized ? _studioPrimary : _studioMuted,
+            ),
             const SizedBox(width: 4),
             Flexible(
               child: Text(
@@ -3392,10 +3339,10 @@ class _TinyInfoPill extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: _studioInk,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  color: emphasized ? _studioPrimary : _studioInk,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ],
@@ -3406,10 +3353,7 @@ class _TinyInfoPill extends StatelessWidget {
 }
 
 class _PropertySectionHeader extends StatelessWidget {
-  const _PropertySectionHeader({
-    required this.title,
-    required this.onViewAll,
-  });
+  const _PropertySectionHeader({required this.title, required this.onViewAll});
 
   final String title;
   final VoidCallback onViewAll;
@@ -3881,11 +3825,9 @@ class _DetailAmenityStrip extends StatelessWidget {
     final List<_QuickSpec> items = <_QuickSpec>[
       ...specs,
       ...amenities.map(
-            (String amenity) => _QuickSpec(
-              icon: _amenityIcon(amenity),
-              label: amenity,
-            ),
-          ),
+        (String amenity) =>
+            _QuickSpec(icon: _amenityIcon(amenity), label: amenity),
+      ),
     ];
     final List<_QuickSpec> values = items.isEmpty
         ? const <_QuickSpec>[
@@ -3956,7 +3898,9 @@ IconData _amenityIcon(String amenity) {
       value.contains('guard')) {
     return Icons.security_rounded;
   }
-  if (value.contains('parking') || value.contains('car') || value.contains('bike')) {
+  if (value.contains('parking') ||
+      value.contains('car') ||
+      value.contains('bike')) {
     return Icons.local_parking_rounded;
   }
   if (value.contains('ac') || value.contains('air condition')) {
@@ -4034,10 +3978,7 @@ IconData _amenityIcon(String amenity) {
 }
 
 class _FeatureStrip extends StatelessWidget {
-  const _FeatureStrip({
-    required this.specs,
-    required this.property,
-  });
+  const _FeatureStrip({required this.specs, required this.property});
 
   final List<_QuickSpec> specs;
   final PropertyData property;
@@ -4061,10 +4002,10 @@ class _FeatureStrip extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: _studioInk,
-                        fontSize: 8.8,
-                        height: 1.02,
-                      ),
+                    color: _studioInk,
+                    fontSize: 8.8,
+                    height: 1.02,
+                  ),
                 ),
               ],
             ),
@@ -4163,9 +4104,7 @@ class _DetailInfoStrip extends StatelessWidget {
               decoration: BoxDecoration(
                 border: isLast
                     ? null
-                    : const Border(
-                        right: BorderSide(color: _studioLine),
-                      ),
+                    : const Border(right: BorderSide(color: _studioLine)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4350,11 +4289,7 @@ class _MiniStat extends StatelessWidget {
 }
 
 class _GlassBadge extends StatelessWidget {
-  const _GlassBadge({
-    required this.label,
-    this.icon,
-    this.rounded = true,
-  });
+  const _GlassBadge({required this.label, this.icon, this.rounded = true});
 
   final String label;
   final IconData? icon;
@@ -4370,8 +4305,8 @@ class _GlassBadge extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
           padding: EdgeInsets.symmetric(
-            horizontal: rounded ? 12 : 10,
-            vertical: rounded ? 8 : 7,
+            horizontal: rounded ? 9 : 8,
+            vertical: rounded ? 6 : 5,
           ),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.2),
@@ -4382,8 +4317,8 @@ class _GlassBadge extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               if (icon != null) ...<Widget>[
-                Icon(icon, size: 14, color: Colors.white),
-                const SizedBox(width: 6),
+                Icon(icon, size: 12, color: Colors.white),
+                const SizedBox(width: 4),
               ],
               Flexible(
                 child: Text(
@@ -4392,7 +4327,8 @@ class _GlassBadge extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: Colors.white,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
@@ -4443,6 +4379,103 @@ class _StatePanel extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PropertyLoadingSkeleton extends StatelessWidget {
+  const _PropertyLoadingSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const _SkeletonBlock(width: 150, height: 20, radius: 8),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const NeverScrollableScrollPhysics(),
+            child: Row(
+              children: List<Widget>.generate(2, (int index) {
+                final double width = (MediaQuery.sizeOf(context).width * 0.74)
+                    .clamp(260.0, 330.0)
+                    .toDouble();
+                return Padding(
+                  padding: EdgeInsets.only(right: index == 0 ? 12 : 0),
+                  child: SizedBox(
+                    width: width,
+                    child: const _SkeletonPropertyCard(),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 18),
+          const _SkeletonBlock(width: 130, height: 20, radius: 8),
+          const SizedBox(height: 10),
+          const _SkeletonPropertyCard(),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonPropertyCard extends StatelessWidget {
+  const _SkeletonPropertyCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFF1F2F4)),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x10111827),
+            blurRadius: 18,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          AspectRatio(aspectRatio: 1.48, child: _SkeletonBlock(radius: 20)),
+          SizedBox(height: 12),
+          _SkeletonBlock(width: 180, height: 16, radius: 8),
+          SizedBox(height: 8),
+          _SkeletonBlock(width: 220, height: 12, radius: 6),
+          SizedBox(height: 8),
+          _SkeletonBlock(width: 150, height: 12, radius: 6),
+          SizedBox(height: 12),
+          _SkeletonBlock(height: 34, radius: 12),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonBlock extends StatelessWidget {
+  const _SkeletonBlock({this.width, this.height, this.radius = 12});
+
+  final double? width;
+  final double? height;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFEDEFF3),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      child: SizedBox(width: width, height: height),
     );
   }
 }
@@ -4664,7 +4697,8 @@ String _sectionTitleForType(int type) {
 List<_PropertyDisplayGroup> _groupPropertiesForDisplay(
   List<PropertyData> properties,
 ) {
-  final Map<String, List<PropertyData>> buckets = <String, List<PropertyData>>{};
+  final Map<String, List<PropertyData>> buckets =
+      <String, List<PropertyData>>{};
   final Map<String, String> titles = <String, String>{};
 
   for (final PropertyData property in properties) {
@@ -4708,7 +4742,10 @@ String _groupKeyFor(PropertyData property, String displayTitle) {
 String _roundedLocationKey(PropertyData property) {
   final double? latitude = property.latitude;
   final double? longitude = property.longitude;
-  if (latitude == null || longitude == null || latitude == 0 || longitude == 0) {
+  if (latitude == null ||
+      longitude == null ||
+      latitude == 0 ||
+      longitude == 0) {
     return _normalizeTitle(property.locationAddress ?? property.address ?? '');
   }
   return '${latitude.toStringAsFixed(3)},${longitude.toStringAsFixed(3)}';
@@ -4719,8 +4756,10 @@ String _displayTitleFor(PropertyData property) {
   if (title.isEmpty) return 'Property';
 
   title = title.replaceFirst(
-    RegExp(r'^\s*(?:studio|[1-9]\s*bhk)(?:\s+villa)?\s*[-:|]\s*',
-        caseSensitive: false),
+    RegExp(
+      r'^\s*(?:studio|[1-9]\s*bhk)(?:\s+villa)?\s*[-:|]\s*',
+      caseSensitive: false,
+    ),
     '',
   );
   title = title.replaceFirst(
@@ -4780,17 +4819,21 @@ String _floorConfigurationLabel(String title) {
   final String raw = match.group(1) ?? '';
   return raw
       .split(' ')
-      .map((String part) =>
-          part.isEmpty ? part : '${part[0].toUpperCase()}${part.substring(1)}')
+      .map(
+        (String part) => part.isEmpty
+            ? part
+            : '${part[0].toUpperCase()}${part.substring(1)}',
+      )
       .join(' ');
 }
 
 String _priceRangeLabel(_PropertyDisplayGroup group) {
-  final List<double> rents = group.configurations
-      .map((PropertyData property) => property.rent)
-      .where((double rent) => rent > 0)
-      .toList()
-    ..sort();
+  final List<double> rents =
+      group.configurations
+          .map((PropertyData property) => property.rent)
+          .where((double rent) => rent > 0)
+          .toList()
+        ..sort();
   if (rents.isEmpty) return 'Rent on request';
   if (rents.first == rents.last) return _money(rents.first);
   return '${_money(rents.first)} - ${_money(rents.last)}';
