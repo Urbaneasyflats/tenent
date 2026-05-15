@@ -940,14 +940,6 @@ class MockUrbanRepository {
           actionKey: 'my_property',
           readyNow: true,
         ),
-        ModuleStatusItem(
-          title: 'Bookings',
-          subtitle: 'Amenity booking entry point and current manual process',
-          icon: Icons.event_available_outlined,
-          phaseLabel: 'Ready now',
-          actionKey: 'bookings',
-          readyNow: true,
-        ),
       ],
       AppRole.tenant => const <ModuleStatusItem>[
         ModuleStatusItem(
@@ -980,14 +972,6 @@ class MockUrbanRepository {
           icon: Icons.home_work_outlined,
           phaseLabel: 'Ready now',
           actionKey: 'my_property',
-          readyNow: true,
-        ),
-        ModuleStatusItem(
-          title: 'Bookings',
-          subtitle: 'Amenity booking entry point and current manual process',
-          icon: Icons.event_available_outlined,
-          phaseLabel: 'Ready now',
-          actionKey: 'bookings',
           readyNow: true,
         ),
       ],

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -8,6 +10,11 @@ import 'auth_storage.dart';
 
 class AuthService {
   AuthService._();
+
+  static const String offlineMessage = ApiClient.offlineMessage;
+  static const Duration startupTimeout = Duration(seconds: 12);
+
+  static Future<void> ensureStorageInitialized() => AuthStorage.init();
 
   /// Initialize app: generate DeviceID + get ApiKey.
   /// Call this at app startup before any other API calls.
@@ -45,14 +52,29 @@ class AuthService {
   static Future<String?> generateDeviceId() async {
     final Uri url =
         Uri.parse('${ApiConfig.baseUrl}${ApiConfig.generateDeviceId}');
-    final http.Response response = await http.post(
-      url,
-      headers: <String, String>{'Content-Type': 'application/json'},
-      body: jsonEncode(<String, dynamic>{}),
-    );
+    final http.Response response;
+    try {
+      response = await http.post(
+        url,
+        headers: <String, String>{'Content-Type': 'application/json'},
+        body: jsonEncode(<String, dynamic>{}),
+      ).timeout(startupTimeout);
+    } on SocketException {
+      throw Exception(offlineMessage);
+    } on TimeoutException {
+      throw Exception(offlineMessage);
+    } on http.ClientException {
+      throw Exception(offlineMessage);
+    }
 
-    final Map<String, dynamic> json =
-        jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> json;
+    try {
+      json = jsonDecode(response.body) as Map<String, dynamic>;
+    } on FormatException {
+      throw Exception('Unable to load data. Please try again later.');
+    } on TypeError {
+      throw Exception('Unable to load data. Please try again later.');
+    }
     final Map<String, dynamic> extras =
         (json['extras'] as Map<String, dynamic>?) ?? <String, dynamic>{};
     final String? deviceId = extras['DeviceID'] as String?;
@@ -67,19 +89,34 @@ class AuthService {
   static Future<String?> getApiKey(String deviceId) async {
     final Uri url =
         Uri.parse('${ApiConfig.baseUrl}${ApiConfig.splashScreen}');
-    final http.Response response = await http.post(
-      url,
-      headers: <String, String>{'Content-Type': 'application/json'},
-      body: jsonEncode(<String, dynamic>{
-        'DeviceID': deviceId,
-        'DeviceType': 3,
-        'DeviceName': 'Mobile-Client',
-        'AppVersion': 1,
-      }),
-    );
+    final http.Response response;
+    try {
+      response = await http.post(
+        url,
+        headers: <String, String>{'Content-Type': 'application/json'},
+        body: jsonEncode(<String, dynamic>{
+          'DeviceID': deviceId,
+          'DeviceType': 3,
+          'DeviceName': 'Mobile-Client',
+          'AppVersion': 1,
+        }),
+      ).timeout(startupTimeout);
+    } on SocketException {
+      throw Exception(offlineMessage);
+    } on TimeoutException {
+      throw Exception(offlineMessage);
+    } on http.ClientException {
+      throw Exception(offlineMessage);
+    }
 
-    final Map<String, dynamic> json =
-        jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> json;
+    try {
+      json = jsonDecode(response.body) as Map<String, dynamic>;
+    } on FormatException {
+      throw Exception('Unable to load data. Please try again later.');
+    } on TypeError {
+      throw Exception('Unable to load data. Please try again later.');
+    }
     final Map<String, dynamic> extras =
         (json['extras'] as Map<String, dynamic>?) ?? <String, dynamic>{};
     final Map<String, dynamic>? data =

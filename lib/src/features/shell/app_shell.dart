@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/api/announcement_service.dart';
+import '../../core/api/api_client.dart';
 import '../../core/api/auth_storage.dart';
 import '../../core/api/billing_service.dart';
 import '../../core/api/block_building_service.dart';
@@ -18,7 +19,7 @@ import '../../core/widgets/custom_bottom_nav_bar.dart';
 import '../billing/billing_page.dart';
 import '../block/block_issues_page.dart';
 import '../block/block_security_page.dart';
-import '../bookings/bookings_page.dart';
+import '../bookings/property_bookings_page.dart';
 import '../communication/communication_page.dart';
 import '../dashboard/dashboard_page.dart';
 import '../discovery/find_property_page.dart';
@@ -118,7 +119,7 @@ class _AppShellState extends State<AppShell> {
         ..clearSnackBars()
         ..showSnackBar(
           const SnackBar(
-            content: Text('No internet connection'),
+            content: Text(ApiClient.offlineMessage),
             backgroundColor: Colors.red,
             duration: Duration(days: 1),
           ),
@@ -163,7 +164,7 @@ class _AppShellState extends State<AppShell> {
       if (_loadError != null && _vendor == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to load data: $_loadError'),
+            content: Text(_loadError!),
             action: SnackBarAction(label: 'Retry', onPressed: _loadData),
             duration: const Duration(seconds: 6),
           ),
@@ -333,7 +334,7 @@ class _AppShellState extends State<AppShell> {
                     color: Colors.red.shade700,
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: const Text(
-                      'No internet connection',
+                      ApiClient.offlineMessage,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
@@ -643,7 +644,7 @@ class _AppShellState extends State<AppShell> {
       'pg_details' => const ResidenceOverviewPage(
           kind: ResidenceOverviewKind.pgDetails,
         ),
-      'bookings' => const BookingsPage(),
+      'bookings' => const PropertyBookingsPage(),
       'my_visits' => MyVisitsPage(
           visits: _repository.visitorsForRole(widget.role),
         ),
@@ -1455,8 +1456,8 @@ class _AppShellState extends State<AppShell> {
           readyNow: true,
         ),
         ModuleStatusItem(
-          title: 'Bookings',
-          subtitle: 'Amenity booking entry point and current manual process',
+          title: 'My Bookings',
+          subtitle: 'Property booking payments, approvals, and refunds',
           icon: Icons.event_available_outlined,
           phaseLabel: 'Ready now',
           actionKey: 'bookings',
@@ -1497,8 +1498,8 @@ class _AppShellState extends State<AppShell> {
           readyNow: true,
         ),
         ModuleStatusItem(
-          title: 'Bookings',
-          subtitle: 'Amenity booking entry point and current manual process',
+          title: 'My Bookings',
+          subtitle: 'Property booking payments, approvals, and refunds',
           icon: Icons.event_available_outlined,
           phaseLabel: 'Ready now',
           actionKey: 'bookings',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/api/auth_service.dart';
 import '../../core/api/vendor_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/custom_button.dart';
@@ -71,7 +72,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Network error. Please try again.';
+        _errorMessage = AuthService.offlineMessage;
       });
     }
   }

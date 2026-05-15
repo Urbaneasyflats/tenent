@@ -8,15 +8,19 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/auth_storage.dart';
+import '../../core/api/property_booking_service.dart';
+import '../../core/api/property_service.dart';
 import '../../core/api/property_wishlist_service.dart';
 import '../../core/api/public_property_service.dart';
+import '../../core/api/razorpay_checkout_service.dart';
+import '../../core/api/vendor_service.dart';
 import '../../core/models/api_models.dart';
 import '../../core/theme/app_theme.dart';
 
 const Color _studioPrimary = Color(0xFF6C5CE7);
 const Color _studioSecondary = Color(0xFFA29BFE);
 const Color _studioAccent = Color(0xFF00B894);
-const Color _studioBackground = Color(0xFFF8F9FB);
+const Color _studioBackground = Color(0xFFF6F6F7);
 const Color _studioSurface = Color(0xFFFFFFFF);
 const Color _studioInk = Color(0xFF1F2937);
 const Color _studioMuted = Color(0xFF6B7280);
@@ -79,7 +83,7 @@ double _landingTextScale(BuildContext context) {
 
 double _landingCardWidth(BuildContext context) {
   final double screenWidth = MediaQuery.sizeOf(context).width;
-  return (screenWidth * 0.78).clamp(286.0, 352.0).toDouble();
+  return (screenWidth * 0.86).clamp(326.0, 390.0).toDouble();
 }
 
 double _promoBannerMinHeight(BuildContext context) {
@@ -421,16 +425,18 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
           children: <Widget>[
             const Positioned.fill(child: ColoredBox(color: _studioBackground)),
             ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 22),
               children: <Widget>[
                 _buildHomeHeader(theme),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 _buildFilters(theme),
+                const SizedBox(height: 8),
+                _buildQuickTypeChips(theme),
                 if (widget.enableWishlist) ...<Widget>[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   _buildWishlistToggle(theme),
                 ],
-                const SizedBox(height: 18),
+                const SizedBox(height: 14),
                 if (_isLoading && _properties.isEmpty)
                   const _PropertyLoadingSkeleton()
                 else if (_errorMessage != null)
@@ -480,14 +486,14 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
 
   Widget _buildHomeHeader(ThemeData theme) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(22),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.86),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(22),
             border: Border.all(color: Colors.white.withValues(alpha: 0.74)),
             boxShadow: const <BoxShadow>[
               BoxShadow(
@@ -499,77 +505,42 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
           ),
           child: Row(
             children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: const <BoxShadow>[
-                    BoxShadow(
-                      color: Color(0x1A111827),
-                      blurRadius: 14,
-                      offset: Offset(0, 7),
-                    ),
-                  ],
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Image.asset('assets/tenenet_logo.jpg', fit: BoxFit.cover),
-              ),
-              const SizedBox(width: 11),
               Expanded(
                 child: InkWell(
                   onTap: _refreshLocation,
-                  borderRadius: BorderRadius.circular(18),
-                  child: Row(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: _studioPrimary.withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          _hasUserLocation
-                              ? Icons.near_me_rounded
-                              : Icons.location_on_outlined,
-                          color: _studioPrimary,
-                          size: 18,
+                      Text(
+                        'Find Property',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: _studioInk,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          height: 1,
+                          letterSpacing: 0,
                         ),
                       ),
-                      const SizedBox(width: 9),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            Row(
-                              children: <Widget>[
-                                Flexible(
-                                  child: Text(
-                                    _locationTitle,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      color: _studioInk,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 17,
-                                      height: 1.05,
-                                      letterSpacing: 0,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 2),
-                                const Icon(
-                                  Icons.keyboard_arrow_down_rounded,
-                                  color: _studioInk,
-                                  size: 20,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _locationSubtitle,
+                      const SizedBox(height: 5),
+                      Row(
+                        children: <Widget>[
+                          Icon(
+                            _hasUserLocation
+                                ? Icons.near_me_rounded
+                                : Icons.location_on_outlined,
+                            color: _studioPrimary,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              _locationTitle == 'Select location'
+                                  ? _locationSubtitle
+                                  : _locationTitle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.bodySmall?.copyWith(
@@ -579,20 +550,22 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
                                 height: 1.1,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: _studioMuted,
+                            size: 16,
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ),
               if (widget.showLoginButton) ...<Widget>[
-                const SizedBox(width: 10),
-                _PurpleGradientButton(
-                  label: 'Login',
-                  icon: Icons.login_rounded,
+                const SizedBox(width: 8),
+                _AirbnbLoginPill(
                   onPressed: widget.onLoginPressed,
-                  compact: true,
                 ),
               ],
             ],
@@ -646,7 +619,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
                         filled: false,
                         isDense: true,
                         labelText: null,
-                        hintText: 'Search property, city or locality',
+                        hintText: 'Search location, apartment, villa, PG...',
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
@@ -668,6 +641,81 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildQuickTypeChips(ThemeData theme) {
+    const List<MapEntry<String, int?>> chips = <MapEntry<String, int?>>[
+      MapEntry<String, int?>('All', null),
+      MapEntry<String, int?>('Apartment', 1),
+      MapEntry<String, int?>('Villa', 2),
+      MapEntry<String, int?>('PG', 3),
+    ];
+
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        physics: const BouncingScrollPhysics(),
+        itemCount: chips.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (BuildContext context, int index) {
+          final MapEntry<String, int?> chip = chips[index];
+          final bool selected =
+              _propertyType == chip.value && _viewAllPropertyType == null;
+          return InkWell(
+            onTap: () {
+              setState(() {
+                _propertyType = chip.value;
+                _viewAllPropertyType = null;
+                _subType = null;
+                _pgSharingType = null;
+                _page = 1;
+              });
+              _loadProperties();
+            },
+            borderRadius: BorderRadius.circular(999),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: selected
+                    ? const LinearGradient(
+                        colors: <Color>[_studioPrimary, _studioSecondary],
+                      )
+                    : null,
+                color: selected ? null : Colors.white,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: selected
+                      ? Colors.transparent
+                      : _studioPrimary.withValues(alpha: 0.10),
+                ),
+                boxShadow: selected
+                    ? const <BoxShadow>[
+                        BoxShadow(
+                          color: Color(0x246C5CE7),
+                          blurRadius: 14,
+                          offset: Offset(0, 7),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Text(
+                chip.key,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: selected ? Colors.white : _studioInk,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                  height: 1.05,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -823,6 +871,34 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
   ) {
     const List<int> order = <int>[3, 2, 1, 4];
     final double cardWidth = _landingCardWidth(context);
+
+    if (_propertyType != null) {
+      return <Widget>[
+        _SelectedTypeHeader(
+          title: _sectionTitleForType(_propertyType!),
+          count: groups.length,
+        ),
+        const SizedBox(height: 8),
+        ...groups.map((_PropertyDisplayGroup group) {
+          final PropertyData property = group.primary;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _StudioPropertyCard(
+              group: group,
+              property: property,
+              fallbackImage: _fallbackImage,
+              onDetails: () => _showPropertyDetails(group),
+              onEnquiry: () => _showEnquirySheet(property),
+              wishlistEnabled: widget.enableWishlist,
+              isWishlisted: _isGroupWishlisted(group),
+              onWishlistToggle: () => _toggleWishlist(property),
+            ),
+          );
+        }),
+        const SizedBox(height: 4),
+      ];
+    }
+
     final Map<int, List<_PropertyDisplayGroup>> grouped =
         <int, List<_PropertyDisplayGroup>>{};
     for (final _PropertyDisplayGroup group in groups) {
@@ -856,7 +932,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
             _loadProperties();
           },
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           clipBehavior: Clip.none,
@@ -887,7 +963,7 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
             }),
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
       ];
     }).toList();
   }
@@ -912,11 +988,11 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
           _loadProperties();
         },
       ),
-      const SizedBox(height: 12),
+      const SizedBox(height: 10),
       ...groups.map((_PropertyDisplayGroup group) {
         final PropertyData property = group.primary;
         return Padding(
-          padding: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.only(bottom: 10),
           child: _StudioPropertyCard(
             group: group,
             property: property,
@@ -947,11 +1023,11 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
           });
         },
       ),
-      const SizedBox(height: 12),
+      const SizedBox(height: 10),
       ...groups.map((_PropertyDisplayGroup group) {
         final PropertyData property = group.primary;
         return Padding(
-          padding: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.only(bottom: 10),
           child: _StudioPropertyCard(
             group: group,
             property: property,
@@ -1375,9 +1451,31 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
             Navigator.of(context).pop();
             _showEnquirySheet(selectedProperty);
           },
+          onBook: (PropertyData selectedProperty) {
+            Navigator.of(context).pop();
+            _showBookingSheet(selectedProperty);
+          },
         );
       },
     );
+  }
+
+  Future<void> _showBookingSheet(PropertyData property) async {
+    if (!AuthStorage.isLoggedIn) {
+      widget.onLoginPressed();
+      return;
+    }
+
+    final bool? booked = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (BuildContext context) => _BookingSheet(property: property),
+    );
+    if (booked == true && mounted) {
+      await _loadProperties();
+    }
   }
 
   bool _isWishlisted(PropertyData property) {
@@ -1460,14 +1558,17 @@ class _FindPropertyPageState extends State<FindPropertyPage> {
     );
   }
 
-  void _showEnquirySheet(PropertyData property) {
-    showModalBottomSheet<void>(
+  Future<void> _showEnquirySheet(PropertyData property) async {
+    final bool? enquired = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       builder: (BuildContext context) {
         return _EnquirySheet(property: property);
       },
     );
+    if (enquired == true && mounted) {
+      await _loadProperties();
+    }
   }
 }
 
@@ -1490,6 +1591,8 @@ class _PropertyCard extends StatelessWidget {
     final String imageUrl = _imagesFor(property, fallbackImage).first;
     final int? vacancy = property.noOfVacancy;
     final List<_QuickSpec> specs = _specsFor(property);
+    final String? tenantStatus = _tenantPropertyStatusLabel(property);
+    final bool hasTenantStatus = tenantStatus != null;
 
     return Container(
       clipBehavior: Clip.antiAlias,
@@ -1539,7 +1642,18 @@ class _PropertyCard extends StatelessWidget {
                       left: 12,
                       child: _GlassBadge(label: _subTypeLabel(property)),
                     ),
-                    if (property.whetherVerifiedPlus == true)
+                    if (hasTenantStatus)
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: _GlassBadge(
+                          label: tenantStatus,
+                          icon: property.whetherBooked
+                              ? Icons.event_available_rounded
+                              : Icons.mark_email_read_outlined,
+                        ),
+                      )
+                    else if (property.whetherVerifiedPlus == true)
                       const Positioned(
                         top: 12,
                         right: 12,
@@ -1682,15 +1796,19 @@ class _PropertyCard extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: onEnquiry,
+                        onPressed: hasTenantStatus ? null : onEnquiry,
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(18),
                           ),
                         ),
-                        icon: const Icon(Icons.send_outlined),
-                        label: const Text('Enquiry'),
+                        icon: Icon(
+                          hasTenantStatus
+                              ? Icons.check_circle_outline_rounded
+                              : Icons.send_outlined,
+                        ),
+                        label: Text(tenantStatus ?? 'Enquiry'),
                       ),
                     ),
                   ],
@@ -1704,6 +1822,16 @@ class _PropertyCard extends StatelessWidget {
   }
 }
 
+String? _tenantPropertyStatusLabel(PropertyData property) {
+  if (property.whetherBooked) {
+    return 'Booked';
+  }
+  if (property.whetherEnquired) {
+    return 'Enquired';
+  }
+  return null;
+}
+
 class _PropertyDetailsSheet extends StatefulWidget {
   const _PropertyDetailsSheet({
     required this.property,
@@ -1714,6 +1842,7 @@ class _PropertyDetailsSheet extends StatefulWidget {
     required this.isWishlisted,
     required this.onWishlistToggle,
     required this.onEnquiry,
+    required this.onBook,
   });
 
   final PropertyData property;
@@ -1724,6 +1853,7 @@ class _PropertyDetailsSheet extends StatefulWidget {
   final bool isWishlisted;
   final VoidCallback onWishlistToggle;
   final ValueChanged<PropertyData> onEnquiry;
+  final ValueChanged<PropertyData> onBook;
 
   @override
   State<_PropertyDetailsSheet> createState() => _PropertyDetailsSheetState();
@@ -1788,10 +1918,13 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
     final PropertyData property = _selectedProperty;
     final List<String> images = _imagesFor(property, widget.fallbackImage);
     final List<String> amenities = _amenitiesFor(property);
-    final int? vacancy = property.noOfVacancy;
-    final double heroHeight = (MediaQuery.sizeOf(context).height * 0.48)
-        .clamp(340.0, 430.0)
+    final String? distanceLabel = _distanceLabel(property);
+    final String? pgSharingLabel = _pgSharingLabel(property);
+    final String email = property.ownerEmail?.trim() ?? '';
+    final double heroHeight = (MediaQuery.sizeOf(context).height * 0.38)
+        .clamp(276.0, 350.0)
         .toDouble();
+    final double bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
@@ -1802,108 +1935,113 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
       child: SizedBox(
         height: MediaQuery.sizeOf(context).height,
         child: Material(
-          color: Colors.white,
-          child: ListView(
-            padding: EdgeInsets.only(
-              bottom: 18 + MediaQuery.of(context).viewInsets.bottom,
-            ),
+          color: const Color(0xFFF5F5F7),
+          child: Stack(
             children: <Widget>[
-              SizedBox(
-                height: heroHeight,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: <Widget>[
-                    PageView.builder(
-                      controller: _detailImageController,
-                      itemCount: images.length,
-                      onPageChanged: (int index) {
-                        setState(() {
-                          _imageIndex = index;
-                        });
-                      },
-                      itemBuilder: (BuildContext context, int index) {
-                        return GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => _openImageGallery(images, index),
-                          child: _DetailHeroImage(imageUrl: images[index]),
-                        );
-                      },
-                    ),
-                    const IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: <Color>[
-                              Color(0x22000000),
-                              Color(0x08000000),
-                              Color(0xD0000000),
+              ListView(
+                padding: EdgeInsets.only(
+                  bottom: 86 + bottomInset + MediaQuery.of(context).viewInsets.bottom,
+                ),
+                children: <Widget>[
+                  SizedBox(
+                    height: heroHeight,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: <Widget>[
+                        PageView.builder(
+                          controller: _detailImageController,
+                          itemCount: images.length,
+                          onPageChanged: (int index) {
+                            setState(() {
+                              _imageIndex = index;
+                            });
+                          },
+                          itemBuilder: (BuildContext context, int index) {
+                            return GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _openImageGallery(images, index),
+                              child: _DetailHeroImage(imageUrl: images[index]),
+                            );
+                          },
+                        ),
+                        const IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: <Color>[
+                                  Color(0x33000000),
+                                  Color(0x00000000),
+                                  Color(0x66000000),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: MediaQuery.paddingOf(context).top + 10,
+                          left: 14,
+                          child: IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.white.withValues(alpha: 0.94),
+                              foregroundColor: const Color(0xFF111827),
+                              fixedSize: const Size(42, 42),
+                              shape: const CircleBorder(),
+                              elevation: 4,
+                              shadowColor: Colors.black.withValues(alpha: 0.14),
+                            ),
+                            icon: const Icon(Icons.chevron_left_rounded, size: 28),
+                          ),
+                        ),
+                        Positioned(
+                          top: MediaQuery.paddingOf(context).top + 12,
+                          right: 14,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              if (widget.wishlistEnabled) ...<Widget>[
+                                _WishlistButton(
+                                  isSelected: widget.isWishlisted,
+                                  onTap: widget.onWishlistToggle,
+                                  compact: true,
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => _openImageGallery(images, _imageIndex),
+                                child: _GlassBadge(
+                                  label: images.length > 1
+                                      ? '${_imageIndex + 1}/${images.length}'
+                                      : 'Photo',
+                                  icon: Icons.photo_library_outlined,
+                                  rounded: false,
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                      ),
-                    ),
-                    Positioned(
-                      top: MediaQuery.paddingOf(context).top + 18,
-                      left: 22,
-                      child: IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF111827),
-                          fixedSize: const Size(56, 56),
-                          shape: const CircleBorder(),
-                          elevation: 6,
-                          shadowColor: Colors.black.withValues(alpha: 0.18),
-                        ),
-                        icon: const Icon(Icons.chevron_left_rounded, size: 34),
-                      ),
-                    ),
-                    Positioned(
-                      top: MediaQuery.paddingOf(context).top + 24,
-                      right: 22,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          if (widget.wishlistEnabled) ...<Widget>[
-                            _WishlistButton(
-                              isSelected: widget.isWishlisted,
-                              onTap: widget.onWishlistToggle,
-                            ),
-                            const SizedBox(width: 10),
-                          ],
-                          GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () => _openImageGallery(images, _imageIndex),
-                            child: _GlassBadge(
-                              label: images.length > 1
-                                  ? '${_imageIndex + 1}/${images.length} photos'
-                                  : 'View photo',
-                              icon: Icons.photo_library_outlined,
-                              rounded: false,
+                        if (images.length > 1)
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 12,
+                            child: _HeroImageDots(
+                              count: images.length,
+                              activeIndex: _imageIndex,
                             ),
                           ),
-                        ],
-                      ),
+                      ],
                     ),
-                    if (images.length > 1)
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 16,
-                        child: _HeroImageDots(
-                          count: images.length,
-                          activeIndex: _imageIndex,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
-                color: Colors.white,
-                child: Column(
+                  ),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF5F5F7),
+                    ),
+                    child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
@@ -1915,19 +2053,48 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                       style: theme.textTheme.headlineSmall?.copyWith(
                         color: _studioInk,
                         fontWeight: FontWeight.w900,
-                        fontSize: 27,
+                        fontSize: 22,
                         height: 1.05,
+                        letterSpacing: 0,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 7),
+                    Row(
+                      children: <Widget>[
+                        if (property.whetherVerifiedPlus == true) ...<Widget>[
+                          const _CompactVerifiedBadge(),
+                          const SizedBox(width: 7),
+                        ],
+                        if (email.isNotEmpty) ...<Widget>[
+                          const Icon(
+                            Icons.alternate_email_rounded,
+                            size: 14,
+                            color: _studioMuted,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: _studioMuted,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 7),
                     Row(
                       children: <Widget>[
                         const Icon(
                           Icons.location_on_outlined,
-                          size: 18,
+                          size: 15,
                           color: Color(0xFF5E6675),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             _locationLabel(property),
@@ -1935,18 +2102,21 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: const Color(0xFF5E6675),
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12.5,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 12),
                     _AirbnbPricePanel(
                       rent: _money(property.rent),
                       deposit: _money(property.deposit),
+                      sharing: pgSharingLabel ?? _configurationLabel(property),
+                      beds: _availabilityShortLabel(property),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 12),
                     if (widget.configurations.length > 1) ...<Widget>[
                       _ConfigurationSelector(
                         configurations: widget.configurations,
@@ -1963,35 +2133,41 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                           _startDetailImageAutoScroll();
                         },
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 12),
                     ],
                     _AirbnbFactRow(
                       items: <_AirbnbFactItem>[
+                        if (distanceLabel != null)
+                          _AirbnbFactItem(
+                            icon: Icons.near_me_rounded,
+                            label: distanceLabel,
+                          ),
                         _AirbnbFactItem(
                           icon: Icons.home_work_outlined,
-                          label: _configurationLabel(property),
+                          label: _subTypeLabel(property),
                         ),
-                        _AirbnbFactItem(
-                          icon: Icons.meeting_room_outlined,
-                          label: _availabilityLongLabel(property),
-                        ),
-                        if (_pgSharingLabel(property) != null)
+                        if (property.propertyType == 3)
                           _AirbnbFactItem(
-                            icon: Icons.group_outlined,
-                            label: _pgSharingLabel(property)!,
+                            icon: Icons.people_alt_outlined,
+                            label: _pgTypeLabel(property),
+                          ),
+                        if (property.whetherVerifiedPlus == true)
+                          const _AirbnbFactItem(
+                            icon: Icons.verified_rounded,
+                            label: 'Verified',
                           ),
                       ],
                     ),
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 14),
                     Text(
                       'Stay Details',
                       style: theme.textTheme.titleLarge?.copyWith(
                         color: _studioInk,
                         fontWeight: FontWeight.w900,
-                        fontSize: 20,
+                        fontSize: 17,
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 8),
                     _OverviewCardGrid(
                       items: <_OverviewCardItem>[
                         _OverviewCardItem(
@@ -2002,38 +2178,24 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                           iconColor: _studioAccent,
                         ),
                         _OverviewCardItem(
-                          icon: Icons.meeting_room_outlined,
-                          label: property.propertyType == 3
-                              ? 'Beds'
-                              : 'Vacancy',
-                          value: _availabilityShortLabel(property),
-                          tint: const Color(0xFFE5E7EB),
-                          iconColor: (vacancy ?? 1) > 0
-                              ? _studioAccent
-                              : _studioMuted,
+                          icon: Icons.receipt_long_outlined,
+                          label: 'Category',
+                          value: _categoryLabel(property.category),
+                          tint: _studioSecondary.withValues(alpha: 0.16),
+                          iconColor: _studioPrimary,
                         ),
-                        if (_pgSharingLabel(property) != null)
-                          _OverviewCardItem(
-                            icon: Icons.group_outlined,
-                            label: 'PG Sharing',
-                            value: _pgSharingLabel(property)!,
-                            tint: _studioSecondary.withValues(alpha: 0.18),
-                            iconColor: _studioPrimary,
-                          ),
                       ],
                     ),
-                    const SizedBox(height: 18),
-                    const Divider(color: _studioLine, height: 1),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
                     Text(
                       'About Property',
                       style: theme.textTheme.titleLarge?.copyWith(
                         color: _studioInk,
                         fontWeight: FontWeight.w900,
-                        fontSize: 20,
+                        fontSize: 17,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 7),
                     _ExpandableAboutText(
                       text: property.description.trim().isEmpty
                           ? '${widget.displayTitle.isEmpty ? 'This property' : widget.displayTitle} offers comfortable accommodation with practical amenities in ${_locationLabel(property)}.'
@@ -2045,50 +2207,36 @@ class _PropertyDetailsSheetState extends State<_PropertyDetailsSheet> {
                         });
                       },
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
                     Text(
                       'Amenities',
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: _studioInk,
                         fontWeight: FontWeight.w900,
-                        fontSize: 18,
+                        fontSize: 17,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     _DetailAmenityStrip(
                       specs: _specsFor(property),
                       amenities: amenities,
                     ),
-                    const SizedBox(height: 22),
-                    if (_hasMapLocation(property)) ...<Widget>[
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: _MapIconAction(onTap: () => _openMap(property)),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: () => widget.onEnquiry(property),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: _studioPrimary,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(56),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          textStyle: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 17,
-                          ),
-                        ),
-                        icon: const Icon(Icons.chat_bubble_outline_rounded),
-                        label: const Text('Enquire Now'),
-                      ),
-                    ),
                   ],
                 ),
+              ),
+            ],
+              ),
+              _StickyPropertyActionBar(
+                canOpenMap: _hasMapLocation(property),
+                onOpenMap: () => _openMap(property),
+                onEnquire: () => widget.onEnquiry(property),
+                onBook: () => widget.onBook(property),
+                enquiryLabel: property.whetherBooked
+                    ? 'Booked'
+                    : (property.whetherEnquired ? 'Enquired' : 'Enquire'),
+                bookLabel: property.whetherBooked ? 'Booked' : 'Book Now',
+                canEnquire: !property.whetherEnquired && !property.whetherBooked,
+                canBook: !property.whetherBooked,
               ),
             ],
           ),
@@ -2105,6 +2253,256 @@ class _EnquirySheet extends StatefulWidget {
 
   @override
   State<_EnquirySheet> createState() => _EnquirySheetState();
+}
+
+class _BookingSheet extends StatefulWidget {
+  const _BookingSheet({required this.property});
+
+  final PropertyData property;
+
+  @override
+  State<_BookingSheet> createState() => _BookingSheetState();
+}
+
+class _BookingSheetState extends State<_BookingSheet> {
+  VendorData? _tenant;
+  double _bookingAmount = 999;
+  bool _loadingProfile = true;
+  bool _submitting = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTenant();
+  }
+
+  Future<void> _loadTenant() async {
+    try {
+      final results = await Future.wait<dynamic>(<Future<dynamic>>[
+        VendorService.fetchVendorInfo(),
+        PropertyService.fetchAppCommonSettings(),
+      ]);
+      final VendorData? tenant = results[0] as VendorData?;
+      final Map<String, dynamic> settings =
+          results[1] as Map<String, dynamic>? ?? <String, dynamic>{};
+      if (tenant == null) {
+        throw Exception('Unable to load your profile.');
+      }
+      final double amount =
+          (settings['Default_Property_Booking_Amount'] as num?)?.toDouble() ??
+              999;
+      if (!mounted) return;
+      setState(() {
+        _tenant = tenant;
+        _bookingAmount = amount > 0 ? amount : 999;
+        _loadingProfile = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.toString().replaceFirst('Exception: ', '');
+        _loadingProfile = false;
+      });
+    }
+  }
+
+  Future<void> _startBooking() async {
+    if (_submitting || _tenant == null) return;
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+
+    try {
+      final PropertyBookingOrderResponse order =
+          await PropertyBookingService.createOrder(
+        propertyId: widget.property.propertyId,
+      );
+      final RazorpayCheckoutResult checkout =
+          await RazorpayCheckoutService.openCheckout(
+        keyId: order.razorpayKeyId,
+        amountInPaise: order.amountInPaise,
+        name: 'Urban EasyFlats',
+        description: 'Property booking ${order.bookingNumber}',
+        orderId: order.razorpayOrderId,
+        currency: order.currency,
+        prefillName: _tenant!.fullName,
+        prefillEmail: _tenant!.email,
+        prefillContact: _tenant!.phone,
+      );
+      if (!checkout.success) {
+        throw Exception(checkout.message ?? 'Payment was not completed.');
+      }
+      if ((checkout.paymentId ?? '').isEmpty ||
+          (checkout.orderId ?? '').isEmpty ||
+          (checkout.signature ?? '').isEmpty) {
+        throw Exception('Payment response is incomplete.');
+      }
+      await PropertyBookingService.verifyPayment(
+        bookingId: order.bookingId,
+        orderId: checkout.orderId!,
+        paymentId: checkout.paymentId!,
+        signature: checkout.signature!,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Booking payment successful. Manager review pending.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final double bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final PropertyData property = widget.property;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(18, 0, 18, bottomInset + 18),
+      child: _loadingProfile
+          ? const SizedBox(
+              height: 220,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          : ListView(
+              shrinkWrap: true,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        property.imageUrl ?? _FindPropertyPageState._fallbackImage,
+                        width: 78,
+                        height: 78,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            property.title.isEmpty
+                                ? 'Property booking'
+                                : property.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_propertyTypeLabel(property.propertyType)} • ${_locationLabel(property)}',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: _studioMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                _BookingInfoRow(label: 'Owner', value: property.ownerName ?? ''),
+                _BookingInfoRow(label: 'Tenant', value: _tenant?.fullName ?? ''),
+                _BookingInfoRow(label: 'Phone', value: _tenant?.phone ?? ''),
+                _BookingInfoRow(label: 'Email', value: _tenant?.email ?? ''),
+                _BookingInfoRow(
+                  label: 'UrbanEasyFlats platform fee with GST',
+                  value: 'Rs ${_bookingAmount.toStringAsFixed(0)}',
+                ),
+                if (_error != null) ...<Widget>[
+                  const SizedBox(height: 10),
+                  Text(
+                    _error!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFFB91C1C),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  onPressed: _submitting ? null : _startBooking,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52),
+                    backgroundColor: _studioPrimary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  icon: _submitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.payment_rounded),
+                  label: Text(_submitting ? 'Processing' : 'Pay and Book'),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class _BookingInfoRow extends StatelessWidget {
+  const _BookingInfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    if (value.trim().isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: _studioMuted,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: _studioInk,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ExpandableAboutText extends StatelessWidget {
@@ -2186,31 +2584,40 @@ class _ConfigurationSelector extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: configurations.map((PropertyData property) {
-            final bool selected =
-                property.propertyId == selectedProperty.propertyId;
-            return ChoiceChip(
-              selected: selected,
-              showCheckmark: false,
-              label: Text(_configurationLabel(property)),
-              onSelected: (_) => onSelected(property),
-              selectedColor: _studioPrimary,
-              backgroundColor: _studioSurface,
-              side: BorderSide(color: selected ? _studioPrimary : _studioLine),
-              labelStyle: TextStyle(
-                color: selected ? Colors.white : _studioInk,
-                fontWeight: FontWeight.w900,
-                fontSize: 12.5,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
-              ),
-            );
-          }).toList(),
+        SizedBox(
+          height: 38,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: configurations.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (BuildContext context, int index) {
+              final PropertyData property = configurations[index];
+              final bool selected =
+                  property.propertyId == selectedProperty.propertyId;
+              return ChoiceChip(
+                selected: selected,
+                showCheckmark: false,
+                label: Text(_configurationLabel(property)),
+                onSelected: (_) => onSelected(property),
+                selectedColor: _studioPrimary,
+                backgroundColor: _studioSurface,
+                side: BorderSide(
+                  color: selected ? _studioPrimary : _studioLine,
+                ),
+                labelStyle: TextStyle(
+                  color: selected ? Colors.white : _studioInk,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                ),
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -2464,6 +2871,8 @@ class _EnquirySheetState extends State<_EnquirySheet> {
   bool _otpSent = false;
   String? _errorMessage;
 
+  bool get _isLoggedIn => AuthStorage.isLoggedIn;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -2517,7 +2926,33 @@ class _EnquirySheetState extends State<_EnquirySheet> {
       );
       if (!mounted) return;
       final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Enquiry submitted. The owner will contact you soon.'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _errorMessage = _cleanException(e);
+      });
+    }
+  }
+
+  Future<void> _submitLoggedInEnquiry() async {
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+    try {
+      await PublicPropertyService.createAuthenticatedPropertyEnquiry(
+        propertyId: widget.property.propertyId,
+      );
+      if (!mounted) return;
+      final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+      Navigator.of(context).pop(true);
       messenger.showSnackBar(
         const SnackBar(
           content: Text('Enquiry submitted. The owner will contact you soon.'),
@@ -2553,7 +2988,7 @@ class _EnquirySheetState extends State<_EnquirySheet> {
                 children: <Widget>[
                   Expanded(
                     child: Text(
-                      'Property enquiry',
+                      _isLoggedIn ? 'Confirm enquiry' : 'Property enquiry',
                       style: theme.textTheme.titleLarge,
                     ),
                   ),
@@ -2570,61 +3005,71 @@ class _EnquirySheetState extends State<_EnquirySheet> {
                 ),
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _nameController,
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  prefixIcon: Icon(Icons.person_outline_rounded),
+              if (_isLoggedIn) ...<Widget>[
+                Text(
+                  'We will use your logged-in profile details for this enquiry.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
-                validator: (String? value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Name is required';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                maxLength: 10,
-                enabled: !_otpSent,
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                decoration: const InputDecoration(
-                  labelText: 'Phone number',
-                  prefixIcon: Icon(Icons.phone_outlined),
-                  counterText: '',
+              ] else ...<Widget>[
+                TextFormField(
+                  controller: _nameController,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    prefixIcon: Icon(Icons.person_outline_rounded),
+                  ),
+                  validator: (String? value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Name is required';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (String? value) {
-                  final String phone = value?.trim() ?? '';
-                  if (!RegExp(r'^[6-9]\d{9}$').hasMatch(phone)) {
-                    return 'Enter a valid 10-digit mobile number';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: _otpSent
-                    ? TextInputAction.next
-                    : TextInputAction.done,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email_outlined),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  maxLength: 10,
+                  enabled: !_otpSent,
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  decoration: const InputDecoration(
+                    labelText: 'Phone number',
+                    prefixIcon: Icon(Icons.phone_outlined),
+                    counterText: '',
+                  ),
+                  validator: (String? value) {
+                    final String phone = value?.trim() ?? '';
+                    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(phone)) {
+                      return 'Enter a valid 10-digit mobile number';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (String? value) {
-                  final String email = value?.trim() ?? '';
-                  if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
-                    return 'Enter a valid email';
-                  }
-                  return null;
-                },
-              ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: _otpSent
+                      ? TextInputAction.next
+                      : TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                  validator: (String? value) {
+                    final String email = value?.trim() ?? '';
+                    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                        .hasMatch(email)) {
+                      return 'Enter a valid email';
+                    }
+                    return null;
+                  },
+                ),
+              ],
               if (_otpSent) ...<Widget>[
                 const SizedBox(height: 12),
                 TextFormField(
@@ -2657,7 +3102,9 @@ class _EnquirySheetState extends State<_EnquirySheet> {
                 child: FilledButton.icon(
                   onPressed: _isSubmitting
                       ? null
-                      : (_otpSent ? _submit : _sendOtp),
+                      : (_isLoggedIn
+                          ? _submitLoggedInEnquiry
+                          : (_otpSent ? _submit : _sendOtp)),
                   icon: _isSubmitting
                       ? const SizedBox(
                           width: 18,
@@ -2668,14 +3115,18 @@ class _EnquirySheetState extends State<_EnquirySheet> {
                           ),
                         )
                       : Icon(
-                          _otpSent
+                          _isLoggedIn || _otpSent
                               ? Icons.check_circle_outline_rounded
                               : Icons.send_outlined,
                         ),
-                  label: Text(_otpSent ? 'Submit enquiry' : 'Send OTP'),
+                  label: Text(
+                    _isLoggedIn
+                        ? 'Submit enquiry'
+                        : (_otpSent ? 'Submit enquiry' : 'Send OTP'),
+                  ),
                 ),
               ),
-              if (_otpSent) ...<Widget>[
+              if (!_isLoggedIn && _otpSent) ...<Widget>[
                 const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
@@ -2869,6 +3320,93 @@ class _PurpleGradientButton extends StatelessWidget {
   }
 }
 
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      style: IconButton.styleFrom(
+        backgroundColor: const Color(0xFFF4F2FF),
+        foregroundColor: _studioPrimary,
+        fixedSize: const Size(36, 36),
+        minimumSize: const Size(36, 36),
+        padding: EdgeInsets.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      icon: Icon(icon, size: 18),
+    );
+  }
+}
+
+class _AirbnbLoginPill extends StatelessWidget {
+  const _AirbnbLoginPill({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          height: 38,
+          padding: const EdgeInsets.only(left: 8, right: 13),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x10111827),
+                blurRadius: 12,
+                offset: Offset(0, 5),
+              ),
+            ],
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              CircleAvatar(
+                radius: 13,
+                backgroundColor: Color(0xFFF4F2FF),
+                child: Icon(
+                  Icons.person_outline_rounded,
+                  color: _studioPrimary,
+                  size: 16,
+                ),
+              ),
+              SizedBox(width: 7),
+              Text(
+                'Log in',
+                style: TextStyle(
+                  color: _studioInk,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _StudioPropertyCard extends StatelessWidget {
   const _StudioPropertyCard({
     required this.group,
@@ -2895,140 +3433,259 @@ class _StudioPropertyCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final List<String> images = _imagesFor(property, fallbackImage);
     final int? vacancy = property.noOfVacancy;
-    final List<String> configLabels = group.configLabels.take(2).toList();
+    final List<String> configLabels = group.configLabels.take(1).toList();
     final String location = _locationLabel(property);
     final String priceLabel = _priceRangeLabel(group);
     final String? distanceLabel = _distanceLabel(property);
     final String sharingLabel = _configurationLabel(property);
     final String bedLabel = _availabilityShortLabel(property);
+    final String typeLabel = _subTypeLabel(property);
+    final double textScale = _landingTextScale(context);
+    final double cardHeight =
+        (178 + ((textScale - 1) * 30)).clamp(178.0, 214.0).toDouble();
 
     return _PressableScale(
       onTap: onDetails,
       child: Container(
-        clipBehavior: Clip.antiAlias,
+        height: cardHeight,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: Colors.white),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFECECEC)),
           boxShadow: const <BoxShadow>[
             BoxShadow(
-              color: Color(0x1F111827),
-              blurRadius: 28,
-              offset: Offset(0, 16),
-            ),
-            BoxShadow(
-              color: Color(0x0F6C5CE7),
-              blurRadius: 12,
-              offset: Offset(0, 5),
+              color: Color(0x14111827),
+              blurRadius: 18,
+              offset: Offset(0, 8),
             ),
           ],
         ),
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
             children: <Widget>[
-              _Airbnb3DImage(
-                images: images,
-                property: property,
-                photoCount: images.length,
-                rent: priceLabel,
-                availabilityLabel: bedLabel,
-                isVerifiedPlus: group.isVerifiedPlus,
+              _CompactPropertyImage(
+                imageUrl: images.first,
+                typeLabel: typeLabel,
                 wishlistEnabled: wishlistEnabled,
                 isWishlisted: isWishlisted,
                 onWishlistToggle: onWishlistToggle,
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(6, 13, 6, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      priceLabel == 'Rent on request'
-                          ? priceLabel
-                          : '$priceLabel / month',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        color: _studioInk,
-                        fontSize: 20,
-                        height: 1.05,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      group.displayTitle.isEmpty ? 'Property' : group.displayTitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: _studioInk,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                        height: 1.18,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                    const SizedBox(height: 9),
-                    _CompactMetaLine(
-                      icon: Icons.location_on_outlined,
-                      label: location,
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 7,
-                      runSpacing: 7,
-                      children: <Widget>[
-                        if (distanceLabel != null)
-                          _TinyInfoPill(
-                            icon: Icons.near_me_rounded,
-                            label: distanceLabel,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 2, 2, 2),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Row(
+                            children: <Widget>[
+                              Flexible(
+                                child: _TypeBadge(label: typeLabel),
+                              ),
+                              if (group.isVerifiedPlus) ...<Widget>[
+                                const SizedBox(width: 5),
+                                const Icon(
+                                  Icons.verified_rounded,
+                                  color: _studioAccent,
+                                  size: 14,
+                                ),
+                              ],
+                            ],
                           ),
-                        _TinyInfoPill(
-                          icon: property.propertyType == 3
-                              ? Icons.meeting_room_outlined
-                              : Icons.home_work_outlined,
-                          label: sharingLabel,
-                        ),
-                        _TinyInfoPill(
-                          icon: Icons.bed_outlined,
-                          label: bedLabel,
-                          emphasized: (vacancy ?? 1) > 0,
-                        ),
-                        if (group.isVerifiedPlus)
-                          const _TinyInfoPill(
-                            icon: Icons.verified_rounded,
-                            label: 'Verified+',
+                          const SizedBox(height: 6),
+                          Text(
+                            priceLabel == 'Rent on request'
+                                ? priceLabel
+                                : '$priceLabel / month',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: _studioInk,
+                              fontSize: 17,
+                              height: 1,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0,
+                            ),
                           ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(6, 12, 6, 4),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    if (configLabels.length > 1) ...<Widget>[
-                      _ConfigurationChipStrip(labels: configLabels),
-                      const SizedBox(height: 10),
+                          const SizedBox(height: 5),
+                          Text(
+                            group.displayTitle.isEmpty
+                                ? 'Property'
+                                : group.displayTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: _studioInk,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13.5,
+                              height: 1.12,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          _CompactMetaLine(
+                            icon: Icons.location_on_outlined,
+                            label: location,
+                          ),
+                        ],
+                      ),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        clipBehavior: Clip.none,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: <Widget>[
+                            if (distanceLabel != null) ...<Widget>[
+                              _TinyInfoPill(
+                                icon: Icons.near_me_rounded,
+                                label: distanceLabel,
+                              ),
+                              const SizedBox(width: 5),
+                            ],
+                            _TinyInfoPill(
+                              icon: property.propertyType == 3
+                                  ? Icons.meeting_room_outlined
+                                  : Icons.home_work_outlined,
+                              label: configLabels.isNotEmpty
+                                  ? configLabels.first
+                                  : sharingLabel,
+                            ),
+                            const SizedBox(width: 5),
+                            _TinyInfoPill(
+                              icon: Icons.bed_outlined,
+                              label: bedLabel,
+                              emphasized: (vacancy ?? 1) > 0,
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        width: double.infinity,
+                        child: _PurpleGradientButton(
+                          label: 'Enquire',
+                          onPressed: onEnquiry,
+                          height: 34,
+                          borderRadius: 12,
+                        ),
+                      ),
                     ],
-                    _PurpleGradientButton(
-                      label: 'Enquire',
-                      onPressed: onEnquiry,
-                      height: 44,
-                      borderRadius: 16,
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactPropertyImage extends StatelessWidget {
+  const _CompactPropertyImage({
+    required this.imageUrl,
+    required this.typeLabel,
+    required this.wishlistEnabled,
+    required this.isWishlisted,
+    required this.onWishlistToggle,
+  });
+
+  final String imageUrl;
+  final String typeLabel;
+  final bool wishlistEnabled;
+  final bool isWishlisted;
+  final VoidCallback onWishlistToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 122,
+      height: double.infinity,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.high,
+              errorBuilder: (_, __, ___) => _ImageFallback(),
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: <Color>[
+                    Color(0x5C000000),
+                    Color(0x00000000),
+                    Color(0x33000000),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              left: 8,
+              bottom: 8,
+              right: 8,
+              child: Text(
+                typeLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 10.5,
+                  height: 1,
+                ),
+              ),
+            ),
+            if (wishlistEnabled)
+              Positioned(
+                right: 8,
+                top: 8,
+                child: _WishlistButton(
+                  isSelected: isWishlisted,
+                  onTap: onWishlistToggle,
+                  compact: true,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TypeBadge extends StatelessWidget {
+  const _TypeBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: _studioPrimary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _studioPrimary.withValues(alpha: 0.10)),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: _studioPrimary,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w900,
+          height: 1,
         ),
       ),
     );
@@ -3364,9 +4021,9 @@ class _TinyInfoPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 190),
+      constraints: const BoxConstraints(maxWidth: 118),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
         decoration: BoxDecoration(
           color: emphasized
               ? _studioPrimary.withValues(alpha: 0.10)
@@ -3383,10 +4040,10 @@ class _TinyInfoPill extends StatelessWidget {
           children: <Widget>[
             Icon(
               icon,
-              size: 12,
+              size: 11,
               color: emphasized ? _studioPrimary : _studioMuted,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 3),
             Flexible(
               child: Text(
                 label,
@@ -3394,8 +4051,9 @@ class _TinyInfoPill extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: emphasized ? _studioPrimary : _studioInk,
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: FontWeight.w800,
+                  height: 1.05,
                 ),
               ),
             ),
@@ -3436,6 +4094,50 @@ class _PropertySectionHeader extends StatelessWidget {
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           child: const Text('View all'),
+        ),
+      ],
+    );
+  }
+}
+
+class _SelectedTypeHeader extends StatelessWidget {
+  const _SelectedTypeHeader({required this.title, required this.count});
+
+  final String title;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: _studioInk,
+              fontWeight: FontWeight.w900,
+              fontSize: 18,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          decoration: BoxDecoration(
+            color: _studioPrimary.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            '$count found',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: _studioPrimary,
+              fontWeight: FontWeight.w900,
+              fontSize: 11,
+            ),
+          ),
         ),
       ],
     );
@@ -3617,17 +4319,53 @@ class _HeroPriceCard extends StatelessWidget {
   }
 }
 
-class _AirbnbPricePanel extends StatelessWidget {
-  const _AirbnbPricePanel({required this.rent, required this.deposit});
-
-  final String rent;
-  final String deposit;
+class _CompactVerifiedBadge extends StatelessWidget {
+  const _CompactVerifiedBadge();
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: _studioAccent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(Icons.verified_rounded, color: _studioAccent, size: 12),
+          SizedBox(width: 3),
+          Text(
+            'Verified',
+            style: TextStyle(
+              color: _studioAccent,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AirbnbPricePanel extends StatelessWidget {
+  const _AirbnbPricePanel({
+    required this.rent,
+    required this.deposit,
+    required this.sharing,
+    required this.beds,
+  });
+
+  final String rent;
+  final String deposit;
+  final String sharing;
+  final String beds;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
       decoration: BoxDecoration(
         color: _studioSurface,
         borderRadius: BorderRadius.circular(18),
@@ -3635,59 +4373,66 @@ class _AirbnbPricePanel extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  rent,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: _studioInk,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 24,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'per month',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: _studioMuted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(width: 1, height: 42, color: _studioLine),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  deposit,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: _studioInk,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'deposit',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: _studioMuted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          Expanded(child: _PricePanelMetric(label: 'Rent', value: rent)),
+          _PricePanelDivider(),
+          Expanded(child: _PricePanelMetric(label: 'Deposit', value: deposit)),
+          _PricePanelDivider(),
+          Expanded(child: _PricePanelMetric(label: 'Sharing', value: sharing)),
+          _PricePanelDivider(),
+          Expanded(child: _PricePanelMetric(label: 'Beds', value: beds)),
         ],
       ),
+    );
+  }
+}
+
+class _PricePanelDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 34,
+      margin: const EdgeInsets.symmetric(horizontal: 7),
+      color: _studioLine,
+    );
+  }
+}
+
+class _PricePanelMetric extends StatelessWidget {
+  const _PricePanelMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.titleSmall?.copyWith(
+            color: _studioInk,
+            fontWeight: FontWeight.w900,
+            fontSize: label == 'Rent' ? 15 : 13,
+            height: 1.05,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: _studioMuted,
+            fontWeight: FontWeight.w800,
+            fontSize: 10,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -3864,6 +4609,139 @@ class _OverviewCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _StickyPropertyActionBar extends StatelessWidget {
+  const _StickyPropertyActionBar({
+    required this.canOpenMap,
+    required this.onOpenMap,
+    required this.onEnquire,
+    required this.onBook,
+    required this.enquiryLabel,
+    required this.bookLabel,
+    required this.canEnquire,
+    required this.canBook,
+  });
+
+  final bool canOpenMap;
+  final VoidCallback onOpenMap;
+  final VoidCallback onEnquire;
+  final VoidCallback onBook;
+  final String enquiryLabel;
+  final String bookLabel;
+  final bool canEnquire;
+  final bool canBook;
+
+  @override
+  Widget build(BuildContext context) {
+    final double bottomInset = MediaQuery.paddingOf(context).bottom;
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(12, 10, 12, 10 + bottomInset),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.98),
+          border: const Border(top: BorderSide(color: _studioLine)),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x1A111827),
+              blurRadius: 18,
+              offset: Offset(0, -8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: <Widget>[
+            if (canOpenMap) ...<Widget>[
+              _StickyIconButton(
+                tooltip: 'Open Maps',
+                icon: Icons.map_outlined,
+                onTap: onOpenMap,
+              ),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: canEnquire ? onEnquire : null,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _studioPrimary,
+                  side: const BorderSide(color: _studioPrimary),
+                  minimumSize: const Size.fromHeight(44),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                icon: Icon(
+                  canEnquire
+                      ? Icons.chat_bubble_outline_rounded
+                      : Icons.check_circle_outline_rounded,
+                  size: 18,
+                ),
+                label: Text(enquiryLabel),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: canBook ? onBook : null,
+                style: FilledButton.styleFrom(
+                  backgroundColor: _studioPrimary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(44),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                icon: Icon(
+                  canBook
+                      ? Icons.event_available_outlined
+                      : Icons.check_circle_outline_rounded,
+                  size: 18,
+                ),
+                label: Text(bookLabel),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StickyIconButton extends StatelessWidget {
+  const _StickyIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onTap,
+      style: IconButton.styleFrom(
+        backgroundColor: _studioPrimary.withValues(alpha: 0.10),
+        foregroundColor: _studioPrimary,
+        fixedSize: const Size(44, 44),
+        minimumSize: const Size(44, 44),
+        padding: EdgeInsets.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      icon: Icon(icon, size: 20),
     );
   }
 }
@@ -4969,6 +5847,24 @@ String? _pgSharingLabel(PropertyData property) {
     4 => 'Quad Sharing',
     5 => 'Dorm Sharing',
     _ => null,
+  };
+}
+
+String _pgTypeLabel(PropertyData property) {
+  if (property.propertyType != 3) return _propertyTypeLabel(property.propertyType);
+  return switch (property.gender) {
+    1 => 'Boys PG',
+    2 => 'Girls PG',
+    3 => 'Co-living PG',
+    _ => _subTypeLabel(property),
+  };
+}
+
+String _categoryLabel(int? category) {
+  return switch (category) {
+    1 => 'Rent',
+    2 => 'Lease',
+    _ => 'Rental',
   };
 }
 

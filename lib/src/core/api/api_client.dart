@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -27,12 +28,16 @@ typedef LogoutCallback = void Function();
 class ApiClient {
   ApiClient._();
 
+  static const String offlineMessage =
+      "hey! Looks like your internet isnt connected.";
+
   static final ApiClient instance = ApiClient._();
 
   LogoutCallback? onSessionExpired;
 
   bool _isRefreshing = false;
-  final List<Completer<ApiResponse>> _pendingRequests = <Completer<ApiResponse>>[];
+  final List<Completer<ApiResponse>> _pendingRequests =
+      <Completer<ApiResponse>>[];
 
   Future<ApiResponse> post(
     String endpoint, [
@@ -59,16 +64,24 @@ class ApiClient {
 
     final Uri url = Uri.parse('${ApiConfig.baseUrl}$endpoint');
 
-    final http.Response response = await http.post(
-      url,
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(requestBody),
-    );
+    final http.Response response;
+    try {
+      response = await http.post(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(requestBody),
+      ).timeout(AuthServiceTimeouts.network);
+    } on SocketException {
+      throw Exception(offlineMessage);
+    } on TimeoutException {
+      throw Exception(offlineMessage);
+    } on http.ClientException {
+      throw Exception(offlineMessage);
+    }
 
-    final Map<String, dynamic> json =
-        jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> json = _decodeResponse(response, endpoint);
     final bool success = json['success'] as bool? ?? false;
     final Map<String, dynamic> extras =
         (json['extras'] as Map<String, dynamic>?) ?? <String, dynamic>{};
@@ -119,9 +132,11 @@ class ApiClient {
         deviceUrl,
         headers: <String, String>{'Content-Type': 'application/json'},
         body: jsonEncode(<String, dynamic>{}),
+      ).timeout(AuthServiceTimeouts.network);
+      final Map<String, dynamic> deviceJson = _decodeResponse(
+        deviceResponse,
+        ApiConfig.generateDeviceId,
       );
-      final Map<String, dynamic> deviceJson =
-          jsonDecode(deviceResponse.body) as Map<String, dynamic>;
       final Map<String, dynamic> deviceExtras =
           (deviceJson['extras'] as Map<String, dynamic>?) ??
               <String, dynamic>{};
@@ -143,9 +158,11 @@ class ApiClient {
           'DeviceName': 'Mobile-Client',
           'AppVersion': 1,
         }),
+      ).timeout(AuthServiceTimeouts.network);
+      final Map<String, dynamic> splashJson = _decodeResponse(
+        splashResponse,
+        ApiConfig.splashScreen,
       );
-      final Map<String, dynamic> splashJson =
-          jsonDecode(splashResponse.body) as Map<String, dynamic>;
       final Map<String, dynamic> splashExtras =
           (splashJson['extras'] as Map<String, dynamic>?) ??
               <String, dynamic>{};
@@ -170,6 +187,30 @@ class ApiClient {
       _pendingRequests.clear();
 
       return retryResponse;
+    } on SocketException {
+      final Exception error = Exception(offlineMessage);
+      _isRefreshing = false;
+      for (final Completer<ApiResponse> completer in _pendingRequests) {
+        completer.completeError(error);
+      }
+      _pendingRequests.clear();
+      throw error;
+    } on TimeoutException {
+      final Exception error = Exception(offlineMessage);
+      _isRefreshing = false;
+      for (final Completer<ApiResponse> completer in _pendingRequests) {
+        completer.completeError(error);
+      }
+      _pendingRequests.clear();
+      throw error;
+    } on http.ClientException {
+      final Exception error = Exception(offlineMessage);
+      _isRefreshing = false;
+      for (final Completer<ApiResponse> completer in _pendingRequests) {
+        completer.completeError(error);
+      }
+      _pendingRequests.clear();
+      throw error;
     } catch (e) {
       _isRefreshing = false;
       for (final Completer<ApiResponse> completer in _pendingRequests) {
@@ -179,4 +220,31 @@ class ApiClient {
       rethrow;
     }
   }
+
+  Map<String, dynamic> _decodeResponse(http.Response response, String endpoint) {
+    final String contentType = response.headers['content-type'] ?? '';
+    final String body = response.body.trimLeft();
+    final bool looksJson = body.startsWith('{') || body.startsWith('[');
+
+    if (!contentType.toLowerCase().contains('json') && !looksJson) {
+      throw Exception('Unable to load data. Please try again later.');
+    }
+
+    try {
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    } on FormatException {
+      throw Exception('Unable to load data. Please try again later.');
+    }
+
+    throw Exception('Unable to load data. Please try again later.');
+  }
+}
+
+class AuthServiceTimeouts {
+  AuthServiceTimeouts._();
+
+  static const Duration network = Duration(seconds: 12);
 }

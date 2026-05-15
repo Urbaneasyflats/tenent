@@ -14,6 +14,7 @@ class ApiConfig {
   // Vendor
   static const String fetchVendorInfo = '/Fetch_Vendor_Complete_Information';
   static const String setVendorProfile = '/Set_Vendor_Profile';
+  static const String requestAccountDeletion = '/Request_Account_Deletion';
 
   // Society
   static const String createSociety = '/Create_Society';
@@ -75,7 +76,25 @@ class ApiConfig {
       '/Filter_All_Wishlist_Properties';
   static const String filterPropertyEnquiries =
       '/Filter_All_Property_Enquiries';
+  static const String createAuthenticatedPropertyEnquiry =
+      '/Create_Authenticated_Property_Enquiry';
   static const String updateEnquiryStatus = '/Update_Enquiry_Status';
+
+  // Property bookings
+  static const String createPropertyBookingOrder =
+      '/Create_Property_Booking_Order';
+  static const String verifyPropertyBookingPayment =
+      '/Verify_Property_Booking_Payment';
+  static const String filterTenantPropertyBookings =
+      '/Filter_Tenant_Property_Bookings';
+  static const String filterManagerPropertyBookings =
+      '/Filter_Manager_Property_Bookings';
+  static const String fetchPropertyBookingDetails =
+      '/Fetch_Property_Booking_Details';
+  static const String managerAcceptPropertyBooking =
+      '/Manager_Accept_Property_Booking';
+  static const String managerRejectPropertyBooking =
+      '/Manager_Reject_Property_Booking';
 
   // Public user property discovery
   static const String userFilterAllProperties = '/Filter_All_Properties';

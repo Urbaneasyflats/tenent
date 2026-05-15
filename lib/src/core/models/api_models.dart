@@ -1202,6 +1202,9 @@ class PropertyData {
     this.whetherVerifiedPlus,
     this.totalLeads,
     this.totalUnseenLeads,
+    this.whetherEnquired = false,
+    this.whetherBooked = false,
+    this.tenantPropertyStatus,
   });
 
   factory PropertyData.fromJson(Map<String, dynamic> json) {
@@ -1382,6 +1385,9 @@ class PropertyData {
       whetherVerifiedPlus: _readBool(json['Whether_Verified_Plus']),
       totalLeads: json['Total_Leads'] as int?,
       totalUnseenLeads: json['Total_Unseen_Leads'] as int?,
+      whetherEnquired: _readBool(json['Whether_Enquired']) ?? false,
+      whetherBooked: _readBool(json['Whether_Booked']) ?? false,
+      tenantPropertyStatus: json['Tenant_Property_Status'] as String?,
     );
   }
 
@@ -1465,6 +1471,9 @@ class PropertyData {
   final bool? whetherVerifiedPlus;
   final int? totalLeads;
   final int? totalUnseenLeads;
+  final bool whetherEnquired;
+  final bool whetherBooked;
+  final String? tenantPropertyStatus;
 
   PropertyRecord toPropertyRecord() {
     return PropertyRecord(
@@ -2137,9 +2146,13 @@ class NotificationData {
     required this.type,
     required this.isRead,
     required this.createdAt,
+    this.referenceType = '',
+    this.referenceId = '',
+    this.data = const <String, dynamic>{},
   });
 
   factory NotificationData.fromJson(Map<String, dynamic> json) {
+    final String referenceType = '${json['Reference_Type'] ?? ''}';
     return NotificationData(
       notificationId:
           json['Vendor_NotificationID'] as String? ??
@@ -2148,7 +2161,10 @@ class NotificationData {
           '',
       title: json['Title'] as String? ?? '',
       message: json['Message'] as String? ?? json['Body'] as String? ?? '',
-      type: '${json['Notification_Type'] ?? json['Type'] ?? 'general'}',
+      type: _normalizeNotificationType(
+        '${json['Notification_Type'] ?? json['Type'] ?? 'general'}',
+        referenceType,
+      ),
       isRead:
           json['Whether_Read'] as bool? ?? json['Is_Read'] as bool? ?? false,
       createdAt:
@@ -2159,6 +2175,11 @@ class NotificationData {
                 '',
           ) ??
           DateTime.now(),
+      referenceType: referenceType,
+      referenceId: '${json['Reference_ID'] ?? ''}',
+      data: json['Data'] is Map<String, dynamic>
+          ? Map<String, dynamic>.from(json['Data'] as Map<String, dynamic>)
+          : const <String, dynamic>{},
     );
   }
 
@@ -2168,6 +2189,9 @@ class NotificationData {
   final String type;
   final bool isRead;
   final DateTime createdAt;
+  final String referenceType;
+  final String referenceId;
+  final Map<String, dynamic> data;
 
   NotificationRecord toNotificationRecord() {
     return NotificationRecord(
@@ -2178,6 +2202,34 @@ class NotificationData {
       isRead: isRead,
       createdAt: createdAt,
     );
+  }
+
+  static String _normalizeNotificationType(
+    String rawType,
+    String referenceType,
+  ) {
+    final String normalizedReference = referenceType.toLowerCase().trim();
+    final String normalizedRaw = rawType.toLowerCase().trim();
+
+    if (normalizedReference.contains('bill')) return 'billing';
+    if (normalizedReference.contains('rental_contract')) return 'contract';
+    if (normalizedReference.contains('announcement')) return 'announcement';
+    if (normalizedReference.contains('support_ticket')) return 'support';
+    if (normalizedReference.contains('property_enquiry') ||
+        normalizedReference.contains('enquiry') ||
+        normalizedReference.contains('lead')) {
+      return 'enquiry';
+    }
+
+    return switch (normalizedRaw) {
+      '1' || '5' => 'billing',
+      '2' => 'contract',
+      '3' => 'announcement',
+      '4' => 'support',
+      '6' => 'enquiry',
+      '7' => 'system',
+      _ => normalizedRaw.isEmpty ? 'general' : normalizedRaw,
+    };
   }
 }
 

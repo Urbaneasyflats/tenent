@@ -1,11 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
-import 'api_client.dart' show ApiResponse;
+import 'api_client.dart' show ApiClient, ApiResponse;
 import 'api_config.dart';
 import 'auth_storage.dart';
 
@@ -48,16 +48,27 @@ class UploadService {
     );
     request.files.add(multipartFile);
 
-    debugPrint('[Upload] POST $url (file=${file.path}, size=${multipartFile.length} bytes, contentType=$contentType)');
-
-    final http.StreamedResponse streamedResponse = await request.send();
+    final http.StreamedResponse streamedResponse;
+    try {
+      streamedResponse = await request.send();
+    } on SocketException {
+      throw Exception(ApiClient.offlineMessage);
+    } on TimeoutException {
+      throw Exception(ApiClient.offlineMessage);
+    } on http.ClientException {
+      throw Exception(ApiClient.offlineMessage);
+    }
     final String responseBody =
         await streamedResponse.stream.bytesToString();
 
-    debugPrint('[Upload] status=${streamedResponse.statusCode} body=$responseBody');
-
-    final Map<String, dynamic> json =
-        jsonDecode(responseBody) as Map<String, dynamic>;
+    final Map<String, dynamic> json;
+    try {
+      json = jsonDecode(responseBody) as Map<String, dynamic>;
+    } on FormatException {
+      throw Exception('Unable to upload file. Please try again later.');
+    } on TypeError {
+      throw Exception('Unable to upload file. Please try again later.');
+    }
 
     final bool success = json['success'] as bool? ?? false;
     if (!success) {
@@ -65,7 +76,7 @@ class UploadService {
           (json['extras'] as Map<String, dynamic>?) ?? <String, dynamic>{};
       final String? message =
           extras['Message'] as String? ?? extras['msg'] as String?;
-      throw Exception(message ?? 'Upload failed (status ${streamedResponse.statusCode})');
+      throw Exception(message ?? 'Upload failed. Please try again later.');
     }
 
     final Map<String, dynamic> extras =
@@ -232,16 +243,31 @@ class UploadService {
     }
 
     final Uri url = Uri.parse('${ApiConfig.uploadBaseUrl}$endpoint');
-    final http.Response response = await http.post(
-      url,
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(requestBody),
-    );
+    final http.Response response;
+    try {
+      response = await http.post(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(requestBody),
+      );
+    } on SocketException {
+      throw Exception(ApiClient.offlineMessage);
+    } on TimeoutException {
+      throw Exception(ApiClient.offlineMessage);
+    } on http.ClientException {
+      throw Exception(ApiClient.offlineMessage);
+    }
 
-    final Map<String, dynamic> json =
-        jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> json;
+    try {
+      json = jsonDecode(response.body) as Map<String, dynamic>;
+    } on FormatException {
+      throw Exception('Unable to load data. Please try again later.');
+    } on TypeError {
+      throw Exception('Unable to load data. Please try again later.');
+    }
     return ApiResponse(
       success: json['success'] as bool? ?? false,
       extras: (json['extras'] as Map<String, dynamic>?) ??

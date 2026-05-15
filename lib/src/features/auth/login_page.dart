@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../../core/api/auth_service.dart';
 import '../../core/models/app_models.dart';
+import '../../core/services/phone_number_prefill_service.dart';
 import '../legal/legal_policy_page.dart';
-import 'widgets/auth_flow_widgets.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({
@@ -22,29 +22,61 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage> with WidgetsBindingObserver {
   final TextEditingController _phoneController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
-  bool _otpSent = false;
+  bool _isPrefillInProgress = false;
   String? _errorMessage;
 
   static final RegExp _indianMobilePattern = RegExp(r'^[6-9]\d{9}$');
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _prefillPhoneNumber();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _phoneController.dispose();
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        _phoneController.text.trim().isEmpty) {
+      _prefillPhoneNumber();
+    }
+  }
+
+  Future<void> _prefillPhoneNumber() async {
+    if (_isPrefillInProgress) {
+      return;
+    }
+    _isPrefillInProgress = true;
+
+    final String? phone =
+        await PhoneNumberPrefillService.detectIndianMobileNumber();
+    if (!mounted) {
+      _isPrefillInProgress = false;
+      return;
+    }
+    if (phone != null && _phoneController.text.trim().isEmpty) {
+      _phoneController.text = phone;
+    }
+    _isPrefillInProgress = false;
+  }
+
   Future<void> _requestOtp() async {
-    TextInput.finishAutofillContext(shouldSave: true);
     _phoneController.text = _normalizePhone(_phoneController.text);
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
-      _otpSent = false;
       _errorMessage = null;
     });
 
@@ -59,7 +91,6 @@ class _LoginPageState extends State<LoginPage> {
       if (response.success) {
         setState(() {
           _isLoading = false;
-          _otpSent = true;
         });
         widget.onOtpRequested(_phoneController.text.trim());
       } else {
@@ -73,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Network error. Please check your connection.';
+        _errorMessage = AuthService.offlineMessage;
       });
     }
   }
@@ -84,74 +115,105 @@ class _LoginPageState extends State<LoginPage> {
     return digits.substring(digits.length - 10);
   }
 
+  void _openPolicy(BuildContext context, LegalPolicyType type) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => LegalPolicyPage(type: type)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AuthFlowColors.background,
+      backgroundColor: const Color(0xFFF8FAFC),
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Stack(
           children: <Widget>[
-            const _AuthAtmosphere(),
-            CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: <Widget>[
-                SliverToBoxAdapter(
-                  child: AuthTopBar(title: 'Sign in', onBack: widget.onBack),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate(
-                      <Widget>[
-                        const AnimatedSection(child: _LoginHeroCard()),
-                        const SizedBox(height: 18),
-                        Text(
-                          'Find your next stay',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            color: AuthFlowColors.ink,
-                            fontSize: 34,
-                            height: 1,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -1.4,
+            Positioned(
+              left: 14,
+              top: 8,
+              child: _BackButton(onPressed: widget.onBack),
+            ),
+            Center(
+              child: AutofillGroup(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 430),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          const SizedBox(height: 22),
+                          const _TenantLogo(),
+                          const SizedBox(height: 30),
+                          Text(
+                            'Welcome home.',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              color: const Color(0xFF111827),
+                              fontSize: 34,
+                              height: 1.05,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'Login with OTP to explore homes, PGs and rentals made for easy living.',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AuthFlowColors.muted,
-                            fontSize: 15,
-                            height: 1.45,
-                            fontWeight: FontWeight.w600,
+                          const SizedBox(height: 10),
+                          Text(
+                            'Log in to your tenant account to manage your home with ease.',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: const Color(0xFF64748B),
+                              fontSize: 15.5,
+                              height: 1.45,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        _OtpLoginCard(
-                          formKey: _formKey,
-                          phoneController: _phoneController,
-                          isLoading: _isLoading,
-                          otpSent: _otpSent,
-                          errorMessage: _errorMessage,
-                          onRequestOtp: _requestOtp,
-                          validator: (String? value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Phone number is required';
-                            }
-                            if (!_indianMobilePattern.hasMatch(value.trim())) {
-                              return 'Enter a valid 10-digit Indian mobile number';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 18),
-                        const _SecureFooter(),
-                      ],
+                          const SizedBox(height: 34),
+                          _PhoneInputField(
+                            controller: _phoneController,
+                            validator: (String? value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Phone number is required';
+                              }
+                              if (!_indianMobilePattern.hasMatch(
+                                value.trim(),
+                              )) {
+                                return 'Enter a valid 10-digit Indian mobile number';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 18),
+                          _LoginButton(
+                            isLoading: _isLoading,
+                            onPressed: _isLoading ? null : _requestOtp,
+                          ),
+                          const SizedBox(height: 12),
+                          const _VerificationText(),
+                          if (_errorMessage != null) ...<Widget>[
+                            const SizedBox(height: 14),
+                            _ErrorMessage(text: _errorMessage!),
+                          ],
+                          const SizedBox(height: 34),
+                          _TermsText(
+                            onTermsTap: () =>
+                                _openPolicy(context, LegalPolicyType.terms),
+                            onPrivacyTap: () =>
+                                _openPolicy(context, LegalPolicyType.privacy),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
           ],
         ),
@@ -160,184 +222,215 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-class _AuthAtmosphere extends StatelessWidget {
-  const _AuthAtmosphere();
+class _BackButton extends StatelessWidget {
+  const _BackButton({required this.onPressed});
+
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: <Widget>[
-        Positioned(
-          top: -110,
-          right: -90,
-          child: Container(
-            width: 260,
-            height: 260,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFFEDEBFF),
-            ),
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(),
+      elevation: 4,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onPressed,
+        child: const SizedBox(
+          width: 42,
+          height: 42,
+          child: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFF111827),
+            size: 18,
           ),
         ),
-        Positioned(
-          top: 170,
-          left: -110,
-          child: Container(
-            width: 240,
-            height: 240,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFFF8F9FB),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _LoginHeroCard extends StatelessWidget {
-  const _LoginHeroCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 232,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(34),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x14111827),
-            blurRadius: 30,
-            offset: Offset(0, 16),
-          ),
-        ],
-      ),
-      child: const Padding(
-        padding: EdgeInsets.all(8),
-        child: LoginHeroIllustration(),
       ),
     );
   }
 }
 
-class _OtpLoginCard extends StatelessWidget {
-  const _OtpLoginCard({
-    required this.formKey,
-    required this.phoneController,
-    required this.isLoading,
-    required this.otpSent,
-    required this.errorMessage,
-    required this.onRequestOtp,
+class _TenantLogo extends StatelessWidget {
+  const _TenantLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 92,
+        height: 92,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: const Color(0xFF0284C7).withValues(alpha: 0.12),
+              blurRadius: 28,
+              offset: const Offset(0, 14),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: Image.asset(
+            'assets/tenenet_logo.jpg',
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PhoneInputField extends StatelessWidget {
+  const _PhoneInputField({
+    required this.controller,
     required this.validator,
   });
 
-  final GlobalKey<FormState> formKey;
-  final TextEditingController phoneController;
-  final bool isLoading;
-  final bool otpSent;
-  final String? errorMessage;
-  final VoidCallback onRequestOtp;
+  final TextEditingController controller;
   final FormFieldValidator<String> validator;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AuthFlowColors.border),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x121F2937),
-            blurRadius: 26,
-            offset: Offset(0, 16),
-          ),
-        ],
+    return TextFormField(
+      controller: controller,
+      autofillHints: const <String>[
+        AutofillHints.telephoneNumber,
+        AutofillHints.telephoneNumberNational,
+      ],
+      keyboardType: TextInputType.phone,
+      textInputAction: TextInputAction.done,
+      maxLength: 10,
+      inputFormatters: <TextInputFormatter>[
+        FilteringTextInputFormatter.digitsOnly,
+        _IndianPhoneInputFormatter(),
+      ],
+      style: const TextStyle(
+        color: Color(0xFF111827),
+        fontSize: 16,
+        fontWeight: FontWeight.w800,
       ),
-      child: AutofillGroup(
-        child: Form(
-          key: formKey,
-          child: Column(
+      decoration: InputDecoration(
+        counterText: '',
+        hintText: 'Phone number',
+        hintStyle: const TextStyle(
+          color: Color(0xFF94A3B8),
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 19,
+        ),
+        prefixIcon: const Padding(
+          padding: EdgeInsets.only(left: 16, right: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-            Row(
-              children: <Widget>[
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AuthFlowColors.cream,
-                    borderRadius: BorderRadius.circular(17),
-                  ),
-                  child: const Icon(
-                    Icons.phone_iphone_rounded,
-                    color: AuthFlowColors.primary,
-                    size: 25,
-                  ),
+              Icon(Icons.phone_iphone_rounded, color: Color(0xFF0284C7)),
+              SizedBox(width: 12),
+              Text(
+                '+91',
+                style: TextStyle(
+                  color: Color(0xFF111827),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        'Continue with phone',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: AuthFlowColors.ink,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'We will send a one time password.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AuthFlowColors.muted,
-                          fontSize: 12.5,
-                          height: 1.35,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+              ),
+              SizedBox(width: 4),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: Color(0xFF64748B),
+                size: 22,
+              ),
+              SizedBox(width: 12),
+              SizedBox(
+                height: 26,
+                child: VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: Color(0xFFE2E8F0),
                 ),
-              ],
+              ),
+              SizedBox(width: 12),
+            ],
+          ),
+        ),
+        border: _inputBorder(const Color(0xFFE2E8F0), 1),
+        enabledBorder: _inputBorder(const Color(0xFFE2E8F0), 1),
+        focusedBorder: _inputBorder(const Color(0xFF38BDF8), 1.5),
+        errorBorder: _inputBorder(const Color(0xFFFCA5A5), 1),
+        focusedErrorBorder: _inputBorder(const Color(0xFF38BDF8), 1.5),
+      ),
+      validator: validator,
+    );
+  }
+
+  static OutlineInputBorder _inputBorder(Color color, double width) {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(20),
+      borderSide: BorderSide(color: color, width: width),
+    );
+  }
+}
+
+class _LoginButton extends StatelessWidget {
+  const _LoginButton({
+    required this.isLoading,
+    required this.onPressed,
+  });
+
+  final bool isLoading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(22),
+        child: Ink(
+          height: 60,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            gradient: const LinearGradient(
+              colors: <Color>[Color(0xFF38BDF8), Color(0xFF0284C7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            const SizedBox(height: 18),
-            PhoneInputField(
-              controller: phoneController,
-              validator: validator,
-            ),
-            const SizedBox(height: 16),
-            GradientButton(
-              label: 'Continue',
-              icon: Icons.arrow_forward_rounded,
-              isLoading: isLoading,
-              onPressed: isLoading ? null : onRequestOtp,
-            ),
-            if (otpSent) ...<Widget>[
-              const SizedBox(height: 14),
-              const _StatusMessage(
-                text: 'OTP sent successfully!',
-                color: AuthFlowColors.accent,
-                icon: Icons.check_circle_rounded,
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: const Color(0xFF0284C7).withValues(alpha: 0.24),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
               ),
             ],
-            if (errorMessage != null) ...<Widget>[
-              const SizedBox(height: 14),
-              _StatusMessage(
-                text: errorMessage!,
-                color: AuthFlowColors.muted,
-                icon: Icons.error_rounded,
-              ),
-            ],
-            ],
+          ),
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.4,
+                    ),
+                  )
+                : const Text(
+                    'Log in',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
           ),
         ),
       ),
@@ -345,33 +438,101 @@ class _OtpLoginCard extends StatelessWidget {
   }
 }
 
-class _StatusMessage extends StatelessWidget {
-  const _StatusMessage({
-    required this.text,
-    required this.color,
-    required this.icon,
-  });
-
-  final String text;
-  final Color color;
-  final IconData icon;
+class _VerificationText extends StatelessWidget {
+  const _VerificationText();
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        Icon(icon, color: color, size: 18),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            text,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: color,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
+    return const Text(
+      "We'll send you a verification code to your phone number.",
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        color: Color(0xFF64748B),
+        fontSize: 12.5,
+        height: 1.35,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+}
+
+class _ErrorMessage extends StatelessWidget {
+  const _ErrorMessage({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF1F2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFCDD2)),
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.error_outline_rounded, color: Color(0xFFE11D48)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Color(0xFF9F1239),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TermsText extends StatelessWidget {
+  const _TermsText({
+    required this.onTermsTap,
+    required this.onPrivacyTap,
+  });
+
+  final VoidCallback onTermsTap;
+  final VoidCallback onPrivacyTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: <Widget>[
+        const Text(
+          'By continuing, you agree to our ',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 12.5,
+            height: 1.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        _PolicyLink(text: 'Terms of Service', onTap: onTermsTap),
+        const Text(
+          ' and ',
+          style: TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 12.5,
+            height: 1.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        _PolicyLink(text: 'Privacy Policy', onTap: onPrivacyTap),
+        const Text(
+          '.',
+          style: TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 12.5,
+            height: 1.5,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -379,64 +540,8 @@ class _StatusMessage extends StatelessWidget {
   }
 }
 
-class _SecureFooter extends StatelessWidget {
-  const _SecureFooter();
-
-  void _openPolicy(BuildContext context, LegalPolicyType type) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => LegalPolicyPage(type: type),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.74),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: <Widget>[
-          const Text(
-            'By continuing, you agree to our ',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AuthFlowColors.muted,
-              fontSize: 12,
-              height: 1.45,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          _FooterPolicyLink(
-            text: 'Terms',
-            onTap: () => _openPolicy(context, LegalPolicyType.terms),
-          ),
-          const Text(
-            ' and ',
-            style: TextStyle(
-              color: AuthFlowColors.muted,
-              fontSize: 12,
-              height: 1.45,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          _FooterPolicyLink(
-            text: 'Privacy Policy',
-            onTap: () => _openPolicy(context, LegalPolicyType.privacy),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FooterPolicyLink extends StatelessWidget {
-  const _FooterPolicyLink({required this.text, required this.onTap});
+class _PolicyLink extends StatelessWidget {
+  const _PolicyLink({required this.text, required this.onTap});
 
   final String text;
   final VoidCallback onTap;
@@ -445,19 +550,48 @@ class _FooterPolicyLink extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(4),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 2),
         child: Text(
           text,
           style: const TextStyle(
-            color: AuthFlowColors.primary,
-            fontSize: 12,
-            height: 1.45,
-            fontWeight: FontWeight.w900,
+            color: Color(0xFF0284C7),
+            decoration: TextDecoration.underline,
+            decorationColor: Color(0xFF0284C7),
+            fontSize: 12.5,
+            height: 1.5,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ),
+    );
+  }
+}
+
+class _IndianPhoneInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final String oldDigits = oldValue.text.replaceAll(RegExp(r'\D'), '');
+    final String digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    if (digits.length <= 10) {
+      return newValue.copyWith(
+        text: digits,
+        selection: TextSelection.collapsed(offset: digits.length),
+      );
+    }
+
+    if (oldDigits.length >= 10) {
+      return oldValue;
+    }
+
+    final String normalized = digits.substring(digits.length - 10);
+    return TextEditingValue(
+      text: normalized,
+      selection: TextSelection.collapsed(offset: normalized.length),
     );
   }
 }

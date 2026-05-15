@@ -12,6 +12,7 @@ import '../../core/api/vendor_service.dart';
 import '../../core/models/api_models.dart';
 import '../../core/models/app_models.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/contact_launcher.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/custom_card.dart';
 import '../../core/widgets/custom_tab_bar.dart';
@@ -496,7 +497,10 @@ class _SupportPageState extends State<SupportPage> {
                             if ((ticket.tenantName ?? '').isNotEmpty)
                               Text(ticket.tenantName!),
                             if ((ticket.tenantPhone ?? '').isNotEmpty)
-                              Text(ticket.tenantPhone!),
+                              ContactTextButton.phone(
+                                value: ticket.tenantPhone!,
+                                label: ticket.tenantPhone!,
+                              ),
                           ],
                         ),
                       ),
@@ -1664,7 +1668,10 @@ class _SupportPageState extends State<SupportPage> {
                     if ((ticket.tenantName ?? '').isNotEmpty)
                       Text('Tenant: ${ticket.tenantName!}'),
                     if ((ticket.tenantPhone ?? '').isNotEmpty)
-                      Text('Phone: ${ticket.tenantPhone!}'),
+                      ContactTextButton.phone(
+                        value: ticket.tenantPhone!,
+                        label: 'Phone: ${ticket.tenantPhone!}',
+                      ),
                   ],
                 ],
               ),

@@ -42,8 +42,7 @@ class AuthStorage {
   static String? get lastSyncedPushToken =>
       _store.getString(_keyLastSyncedPushToken);
   static String? get locationTitle => _store.getString(_keyLocationTitle);
-  static String? get locationSubtitle =>
-      _store.getString(_keyLocationSubtitle);
+  static String? get locationSubtitle => _store.getString(_keyLocationSubtitle);
   static double? get locationLatitude =>
       double.tryParse(_store.getString(_keyLocationLatitude) ?? '');
   static double? get locationLongitude =>

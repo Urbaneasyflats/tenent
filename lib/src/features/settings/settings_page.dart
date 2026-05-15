@@ -243,6 +243,15 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  Future<void> _requestAccountDeletion() async {
+    try {
+      final response = await VendorService.requestAccountDeletion();
+      _showMessage(response.message ?? 'Account deletion request submitted.');
+    } catch (error) {
+      _showMessage(error.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
@@ -469,7 +478,10 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: 16),
               _LegalSettingsCard(onOpenPolicy: _openPolicy),
               const SizedBox(height: 16),
-              _AccountDeletionCard(onShowMessage: _showMessage),
+              _AccountDeletionCard(
+                onShowMessage: _showMessage,
+                onSubmit: _requestAccountDeletion,
+              ),
             ],
           ],
         ),
@@ -624,9 +636,13 @@ class _ProfileAvatar extends StatelessWidget {
 }
 
 class _AccountDeletionCard extends StatefulWidget {
-  const _AccountDeletionCard({required this.onShowMessage});
+  const _AccountDeletionCard({
+    required this.onShowMessage,
+    required this.onSubmit,
+  });
 
   final void Function(String message) onShowMessage;
+  final Future<void> Function() onSubmit;
 
   @override
   State<_AccountDeletionCard> createState() => _AccountDeletionCardState();
@@ -652,8 +668,9 @@ class _AccountDeletionCardState extends State<_AccountDeletionCard> {
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () {
               Navigator.pop(dialogContext);
-              setState(() => _submitted = true);
-              widget.onShowMessage('Your request has been submitted.');
+              widget.onSubmit().then((_) {
+                if (mounted) setState(() => _submitted = true);
+              });
             },
             child: const Text('Yes, Delete'),
           ),

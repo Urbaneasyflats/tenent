@@ -6,6 +6,7 @@ import '../../core/api/property_service.dart';
 import '../../core/models/api_models.dart';
 import '../../core/models/app_models.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/contact_launcher.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/custom_card.dart';
 import '../../core/widgets/page_header.dart';
@@ -554,14 +555,14 @@ class _PropertyEnquiriesPageState extends State<PropertyEnquiriesPage> {
                           runSpacing: 8,
                           children: <Widget>[
                             if (enquiry.phone.isNotEmpty)
-                              ToneBadge(
+                              ContactTextButton.phone(
+                                value: enquiry.phone,
                                 label: enquiry.phone,
-                                tone: UiTone.neutral,
                               ),
                             if ((enquiry.email ?? '').isNotEmpty)
-                              ToneBadge(
+                              ContactTextButton.email(
+                                value: enquiry.email!,
                                 label: enquiry.email!,
-                                tone: UiTone.neutral,
                               ),
                           ],
                         ),

@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
 import '../models/api_models.dart';
+import 'api_client.dart';
 import 'api_config.dart';
 import 'auth_storage.dart';
 
@@ -25,6 +28,10 @@ class PublicPropertyService {
   }) async {
     final Map<String, dynamic> body = <String, dynamic>{
       'ApiKey': AuthStorage.apiKey ?? '',
+      if (AuthStorage.vendorId != null && AuthStorage.vendorId!.isNotEmpty)
+        'VendorID': AuthStorage.vendorId,
+      if (AuthStorage.sessionId != null && AuthStorage.sessionId!.isNotEmpty)
+        'SessionID': AuthStorage.sessionId,
       'Latitude': latitude,
       'Longitude': longitude,
       'Skip': skip,
@@ -132,18 +139,46 @@ class PublicPropertyService {
     }
   }
 
+  static Future<void> createAuthenticatedPropertyEnquiry({
+    required String propertyId,
+  }) async {
+    final ApiResponse response = await ApiClient.instance.post(
+      ApiConfig.createAuthenticatedPropertyEnquiry,
+      <String, dynamic>{'PropertyID': propertyId},
+    );
+
+    if (!response.success) {
+      throw Exception(response.message ?? 'Failed to submit enquiry.');
+    }
+  }
+
   static Future<ApiEnvelope> _post(
     String endpoint,
     Map<String, dynamic> body,
   ) async {
-    final http.Response response = await http.post(
-      Uri.parse('$_baseUrl$endpoint'),
-      headers: <String, String>{'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
+    final http.Response response;
+    try {
+      response = await http.post(
+        Uri.parse('$_baseUrl$endpoint'),
+        headers: <String, String>{'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+    } on SocketException {
+      throw Exception(ApiClient.offlineMessage);
+    } on TimeoutException {
+      throw Exception(ApiClient.offlineMessage);
+    } on http.ClientException {
+      throw Exception(ApiClient.offlineMessage);
+    }
 
-    final Map<String, dynamic> json =
-        jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> json;
+    try {
+      json = jsonDecode(response.body) as Map<String, dynamic>;
+    } on FormatException {
+      throw Exception('Unable to load data. Please try again later.');
+    } on TypeError {
+      throw Exception('Unable to load data. Please try again later.');
+    }
     return ApiEnvelope.fromJson(json);
   }
 

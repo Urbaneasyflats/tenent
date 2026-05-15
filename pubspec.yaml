@@ -1,8 +1,7 @@
 name: resident_app
 description: UrbanEasyFlats Resident App — native Flutter app for tenants and residents.
 publish_to: 'none'
-version: 1.0.0+13
-
+version: 1.0.0+34
 environment:
   sdk: ">=3.8.0 <4.0.0"
 
@@ -26,6 +25,8 @@ dependencies:
   geolocator: ^13.0.2
   geocoding: ^3.0.0
   in_app_update: ^4.2.3
+  sms_autofill: ^2.4.1
+  mobile_number: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -45,4 +46,3 @@ flutter:
     - assets/tenenet_logo.jpg
     - assets/icon/
     - assets/login_hero.png
-    - assets/animations/
