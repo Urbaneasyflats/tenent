@@ -214,7 +214,28 @@ class AuthService {
 
   /// Logout: clear stored credentials.
   static Future<void> logout() async {
+    await _clearRemotePushToken();
     await AuthStorage.clearAll();
+  }
+
+  static Future<void> _clearRemotePushToken() async {
+    if (AuthStorage.apiKey == null ||
+        AuthStorage.apiKey!.isEmpty ||
+        AuthStorage.sessionId == null ||
+        AuthStorage.sessionId!.isEmpty ||
+        AuthStorage.vendorId == null ||
+        AuthStorage.vendorId!.isEmpty) {
+      return;
+    }
+
+    try {
+      await ApiClient.instance.post(
+        ApiConfig.clearFcmToken,
+        <String, dynamic>{
+          'FCM_Token': AuthStorage.pushToken ?? '',
+        },
+      );
+    } catch (_) {}
   }
 
   static Future<void> _syncStoredPushToken() async {

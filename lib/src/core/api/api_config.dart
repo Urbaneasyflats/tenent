@@ -10,6 +10,7 @@ class ApiConfig {
   static const String generateOtp = '/Generate_Vendor_OTP';
   static const String validateOtp = '/Validate_Vendor_OTP';
   static const String updateFcmToken = '/Update_Vendor_FCM_Token';
+  static const String clearFcmToken = '/Clear_Vendor_FCM_Token';
 
   // Vendor
   static const String fetchVendorInfo = '/Fetch_Vendor_Complete_Information';
