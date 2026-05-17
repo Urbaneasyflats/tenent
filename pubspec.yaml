@@ -1,7 +1,7 @@
 name: resident_app
 description: UrbanEasyFlats Resident App — native Flutter app for tenants and residents.
 publish_to: 'none'
-version: 1.0.0+34
+version: 1.0.0+44
 environment:
   sdk: ">=3.8.0 <4.0.0"
 

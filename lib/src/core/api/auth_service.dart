@@ -188,6 +188,8 @@ class AuthService {
       final String? sessionId = data['SessionID'] as String?;
       final String? vendorId = data['VendorID'] as String?;
       final int? vendorType = data['Vendor_Type'] as int?;
+      final bool blocked = data['Whether_Account_Blocked_By_Admin'] == true;
+      final String blockReason = (data['Account_Block_Reason'] as String?) ?? '';
 
       if (sessionId != null && vendorId != null) {
         await AuthStorage.saveLoginCredentials(
@@ -195,6 +197,8 @@ class AuthService {
           vendorId: vendorId,
           vendorType: vendorType,
         );
+        await AuthStorage.setWhetherAccountBlockedByAdmin(blocked);
+        await AuthStorage.setAccountBlockReason(blockReason);
         await _syncStoredPushToken();
       }
     }

@@ -8,6 +8,8 @@ class AuthStorage {
   static const String _keyVendorId = 'vendorID';
   static const String _keyDeviceId = 'deviceID';
   static const String _keyVendorType = 'vendorType';
+  static const String _keyAccountBlocked = 'accountBlocked';
+  static const String _keyAccountBlockReason = 'accountBlockReason';
   static const String _keyPushToken = 'pushToken';
   static const String _keyLastSyncedPushToken = 'lastSyncedPushToken';
   static const String _keyLocationTitle = 'locationTitle';
@@ -38,6 +40,10 @@ class AuthStorage {
   static String? get vendorId => _store.getString(_keyVendorId);
   static String? get deviceId => _store.getString(_keyDeviceId);
   static int? get vendorType => _store.getInt(_keyVendorType);
+  static bool get whetherAccountBlockedByAdmin =>
+      (_store.getInt(_keyAccountBlocked) ?? 0) == 1;
+  static String? get accountBlockReason =>
+      _store.getString(_keyAccountBlockReason);
   static String? get pushToken => _store.getString(_keyPushToken);
   static String? get lastSyncedPushToken =>
       _store.getString(_keyLastSyncedPushToken);
@@ -77,6 +83,18 @@ class AuthStorage {
 
   static Future<void> setVendorType(int value) =>
       _store.setInt(_keyVendorType, value);
+
+  static Future<void> setWhetherAccountBlockedByAdmin(bool value) =>
+      _store.setInt(_keyAccountBlocked, value ? 1 : 0);
+
+  static Future<void> setAccountBlockReason(String? value) async {
+    final String text = (value ?? '').trim();
+    if (text.isEmpty) {
+      await _store.remove(_keyAccountBlockReason);
+    } else {
+      await _store.setString(_keyAccountBlockReason, text);
+    }
+  }
 
   static Future<void> setPushToken(String value) =>
       _store.setString(_keyPushToken, value);
@@ -119,6 +137,8 @@ class AuthStorage {
     await _store.remove(_keySessionId);
     await _store.remove(_keyVendorId);
     await _store.remove(_keyVendorType);
+    await _store.remove(_keyAccountBlocked);
+    await _store.remove(_keyAccountBlockReason);
     await clearLastSyncedPushToken();
     // Keep apiKey and deviceId for re-login
   }

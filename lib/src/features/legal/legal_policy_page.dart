@@ -15,7 +15,7 @@ class LegalPolicyPage extends StatelessWidget {
       };
 
   String get _updatedAt => switch (type) {
-        LegalPolicyType.terms => 'Last updated: 16-10-2025',
+        LegalPolicyType.terms => 'Last updated: 16-05-2026',
         LegalPolicyType.privacy => 'Effective Date: 16-10-2025',
       };
 
@@ -279,6 +279,22 @@ const List<_PolicySection> _termsSections = <_PolicySection>[
       'Website: www.urbaneasyflats.com',
       'Address: D.NO: 1-57/272/C, SRI RAM NAGAR COLONY, KONDAPUR-500084, Hyderabad, Telangana, India.',
       'Copyright 2025 Urban Easyflats and Homes Private Limited. All rights reserved.',
+    ],
+  ),
+  _PolicySection(
+    title: '16. Platform Fee, Settlement, and Withdrawals',
+    points: <String>[
+      'Urban EasyFlats may charge a non-refundable Platform Service Fee, Booking Fee, Convenience Fee, Processing Fee, or Technology Usage Fee for access to the Platform, customer support, payment processing integrations, tenant onboarding, booking management, and related technology services.',
+      'The Platform Service Fee is earned immediately upon successful booking, payment initiation, tenant confirmation, service request processing, or transaction completion on the Platform.',
+      'The Platform Service Fee is strictly non-refundable under all circumstances, including tenant cancellation, change of mind, property rejection after booking, delay in occupancy, early vacating, non-utilization of services, payment gateway interruptions, technical issues not attributable to Urban EasyFlats, disputes between users, booking modifications, or user dissatisfaction after service access has been provided.',
+      'The Platform Service Fee is separate from rent, security deposit, maintenance charges, utility charges, society dues, owner collections, refundable deposits, and third-party gateway charges.',
+      'Urban EasyFlats facilitates payments through authorized third-party payment gateways, banking partners, financial institutions, and payment processors. Settlement timelines depend on banking operational hours, RBI guidelines, public holidays, weekend restrictions, payment gateway cycles, and technical availability.',
+      'Rent payments made on Saturdays, Sundays, public holidays, bank holidays, festival holidays, non-working days, or after banking cut-off times may be reflected in the relevant wallet or bank account on the next working banking day.',
+      'Maintenance payments and society dues follow the same banking and gateway settlement rules. Urban EasyFlats does not guarantee instant transfer during non-working banking periods.',
+      'Wallet withdrawal requests initiated during weekends, holidays, festival days, bank holidays, or non-operational banking hours may be processed on the next working day. Actual bank credit timelines may vary by beneficiary bank, gateway clearance, and regulatory checks.',
+      'Urban EasyFlats may temporarily hold, review, delay, or restrict withdrawals for fraud prevention, suspicious transaction review, chargeback investigation, or technical reconciliation.',
+      'Urban EasyFlats is not liable for settlement delays, banking interruptions, delayed wallet updates, delayed withdrawals, gateway failures, or bank server downtime caused by third parties.',
+      'By using the Platform, all users agree to these fee, settlement, and withdrawal timelines and acknowledge that Urban EasyFlats functions as a technology intermediary platform.',
     ],
   ),
 ];

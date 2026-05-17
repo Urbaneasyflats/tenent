@@ -49,6 +49,12 @@ class PremiumNotificationContent {
       'Bill_Amount',
       'Booking_Amount',
     ]);
+    final String residentImage = _first(data, <String>[
+      'residentImage',
+      'Resident_Image_URL',
+      'tenantImage',
+      'Tenant_Image_URL',
+    ]);
     final String tenantName = _first(data, <String>[
       'tenantName',
       'Tenant_Name',
@@ -88,29 +94,35 @@ class PremiumNotificationContent {
       screen: screen.isEmpty ? _screenFor(type) : screen,
       priority: _priorityFor(type, data),
       actions: _actionsFor(type),
-      imageUrl: _first(data, <String>[
-        'image',
-        'imageUrl',
-        'propertyImage',
-        'property_image',
-        'Property_Image_URL',
-        'Property_Image_Document',
-        'Property_Image',
-        'Property_Image_1',
-        'Property_Image_2',
-        'Property_Image_3',
-        'Image_URL',
-        'Notification_Image',
-        'notificationImage',
-        'societyBanner',
-        'Society_Banner',
-        'ticketImage',
-        'Ticket_Image',
-        'visitorPhoto',
-        'Visitor_Photo',
-        'big_picture',
-        'picture',
-      ]),
+      imageUrl: residentImage.isNotEmpty
+          ? residentImage
+          : _first(data, <String>[
+              'image',
+              'imageUrl',
+              'residentImage',
+              'Resident_Image_URL',
+              'tenantImage',
+              'Tenant_Image_URL',
+              'propertyImage',
+              'property_image',
+              'Property_Image_URL',
+              'Property_Image_Document',
+              'Property_Image',
+              'Property_Image_1',
+              'Property_Image_2',
+              'Property_Image_3',
+              'Image_URL',
+              'Notification_Image',
+              'notificationImage',
+              'societyBanner',
+              'Society_Banner',
+              'ticketImage',
+              'Ticket_Image',
+              'visitorPhoto',
+              'Visitor_Photo',
+              'big_picture',
+              'picture',
+            ]),
       data: data,
     );
   }
@@ -241,11 +253,11 @@ class PremiumNotificationContent {
       return 'payments';
     }
     if (type == 'ticket' || type == 'maintenance') return 'tickets';
-    if (type == 'society_notice' || type == 'emergency_alert') {
+    if (type == 'society_notice' || type == 'emergency_alert' || type == 'security_alert') {
       return 'announcements';
     }
     if (type == 'enquiry') return 'enquiries';
-    if (type == 'visitor') return 'security';
+    if (type == 'visitor' || type == 'security_alert') return 'security';
     if (type == 'agreement') return 'contracts';
     return 'updates';
   }
@@ -261,7 +273,7 @@ class PremiumNotificationContent {
       'rent_due' => 'bill_detail',
       'payment_success' || 'payment_failed' || 'wallet' => 'payment_history',
       'agreement' => 'rental_contract_detail',
-      'society_notice' || 'emergency_alert' => 'announcement_detail',
+      'society_notice' || 'emergency_alert' || 'security_alert' => 'announcement_detail',
       'ticket' || 'maintenance' => 'support_ticket_detail',
       'visitor' => 'visitor_detail',
       _ => 'notifications',
@@ -323,6 +335,10 @@ class PremiumNotificationContent {
           AndroidNotificationAction('view_alert', 'View'),
           AndroidNotificationAction('call_security', 'Security'),
         ],
+      'security_alert' => const <AndroidNotificationAction>[
+          AndroidNotificationAction('view_alert', 'View'),
+          AndroidNotificationAction('call_security', 'Security'),
+        ],
       'ticket' || 'maintenance' => const <AndroidNotificationAction>[
           AndroidNotificationAction('open_ticket', 'Open'),
           AndroidNotificationAction('reply', 'Reply'),
@@ -377,18 +393,26 @@ class PremiumNotificationContent {
               : backendBody,
         ),
       'rent_due' => _Copy(
-          amount.isEmpty ? 'Rent bill is ready' : 'Rs $amount rent is due',
-          status.isEmpty ? 'Due soon - pay securely from the app.' : status,
+          backendTitle.isNotEmpty
+              ? backendTitle
+              : (amount.isEmpty ? 'Rent bill is ready' : 'Rs $amount rent is due'),
+          backendBody.isNotEmpty
+              ? backendBody
+              : (status.isEmpty ? 'Due soon - pay securely from the app.' : status),
         ),
       'payment_success' => _Copy(
-          amount.isEmpty
-              ? 'Payment successful'
-              : 'Rs $amount paid successfully',
-          'Receipt is ready in your payment history.',
+          backendTitle.isNotEmpty
+              ? backendTitle
+              : (amount.isEmpty ? 'Payment successful' : 'Rs $amount paid successfully'),
+          backendBody.isNotEmpty
+              ? backendBody
+              : 'Receipt is ready in your payment history.',
         ),
       'payment_failed' => _Copy(
-          'Payment could not be completed',
-          'Please retry or open the bill for details.',
+          backendTitle.isNotEmpty ? backendTitle : 'Payment could not be completed',
+          backendBody.isNotEmpty
+              ? backendBody
+              : 'Please retry or open the bill for details.',
         ),
       'agreement' => _Copy(
           'Agreement update for $place',
@@ -407,8 +431,8 @@ class PremiumNotificationContent {
           backendBody.isEmpty ? 'Open the ticket for the latest status.' : backendBody,
         ),
       'maintenance' => _Copy(
-          'Maintenance request updated',
-          backendBody.isEmpty ? 'Open the request for details.' : backendBody,
+          backendTitle.isNotEmpty ? backendTitle : 'Maintenance request updated',
+          backendBody.isNotEmpty ? backendBody : 'Open the request for details.',
         ),
       'visitor' => _Copy(
           'Visitor approval needed',

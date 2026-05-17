@@ -16,6 +16,7 @@ class ApiConfig {
   static const String fetchVendorInfo = '/Fetch_Vendor_Complete_Information';
   static const String setVendorProfile = '/Set_Vendor_Profile';
   static const String requestAccountDeletion = '/Request_Account_Deletion';
+  static const String requestAccountUnlock = '/Request_Account_Unlock';
 
   // Society
   static const String createSociety = '/Create_Society';

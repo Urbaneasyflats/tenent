@@ -40,4 +40,11 @@ class VendorService {
       <String, dynamic>{'Reason': reason},
     );
   }
+
+  static Future<ApiResponse> requestAccountUnlock({String reason = ''}) {
+    return ApiClient.instance.post(
+      ApiConfig.requestAccountUnlock,
+      <String, dynamic>{'Reason': reason},
+    );
+  }
 }

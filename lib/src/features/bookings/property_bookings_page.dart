@@ -994,7 +994,7 @@ String _humanBookingStage(PropertyBookingData booking) {
   }
   if (bookingStatus.contains('accepted')) return 'Manager accepted';
   if (paymentStatus.contains('success') || paymentStatus.contains('captured')) {
-    return 'Manager review pending';
+    return 'Processing';
   }
   if (paymentStatus.contains('pending')) return 'Payment pending';
   return _statusLabel(booking.bookingStatus);

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
@@ -10,16 +9,14 @@ import 'core/api/vendor_service.dart';
 import 'core/models/app_models.dart';
 import 'core/services/app_update_service.dart';
 import 'core/services/connectivity_service.dart';
-import 'core/services/notification_analytics.dart';
+import 'core/services/notification_tap_router.dart';
 import 'core/services/push_notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/login_page.dart';
+import 'features/auth/blocked_account_page.dart';
 import 'features/auth/otp_page.dart';
 import 'features/auth/profile_setup_page.dart';
-import 'features/bookings/property_bookings_page.dart';
 import 'features/discovery/find_property_page.dart';
-import 'features/notifications/notifications_page.dart';
-import 'features/properties/property_enquiries_page.dart';
 import 'features/shell/app_shell.dart';
 import 'features/splash/startup_splash_page.dart';
 
@@ -38,11 +35,15 @@ class ResidentApp extends StatefulWidget {
 class _ResidentAppState extends State<ResidentApp> with WidgetsBindingObserver {
   bool _isInitializing = true;
   bool _isAuthenticated = false;
+  bool _isAccountBlocked = false;
+  String? _accountBlockReason;
   bool _needsProfileSetup = false;
   bool _showLogin = false;
   String? _phoneNumber;
   AppRole _currentRole = AppRole.tenant;
   StartupStep _startupStep = StartupStep.initializing;
+  String? _pendingNotificationPayload;
+  bool _isOpeningPendingNotification = false;
 
   @override
   void initState() {
@@ -87,12 +88,14 @@ class _ResidentAppState extends State<ResidentApp> with WidgetsBindingObserver {
         if (loggedIn) {
           final AppRole role = await _resolveRole();
           if (!mounted) return;
-          setState(() {
-            _currentRole = role;
-            _isAuthenticated = true;
-            _isInitializing = false;
-            _startupStep = StartupStep.ready;
-          });
+      setState(() {
+        _currentRole = role;
+        _isAuthenticated = true;
+        _isAccountBlocked = AuthStorage.whetherAccountBlockedByAdmin;
+        _accountBlockReason = AuthStorage.accountBlockReason;
+        _isInitializing = false;
+        _startupStep = StartupStep.ready;
+      });
           _startBackgroundServices();
           return;
         }
@@ -130,6 +133,8 @@ class _ResidentAppState extends State<ResidentApp> with WidgetsBindingObserver {
         setState(() {
           _currentRole = role;
           _isAuthenticated = true;
+          _isAccountBlocked = AuthStorage.whetherAccountBlockedByAdmin;
+          _accountBlockReason = AuthStorage.accountBlockReason;
           _isInitializing = false;
           _startupStep = StartupStep.ready;
         });
@@ -141,6 +146,7 @@ class _ResidentAppState extends State<ResidentApp> with WidgetsBindingObserver {
       }
 
       _startBackgroundServices();
+      _flushPendingNotificationTap();
     } on TimeoutException {
       if (!mounted) return;
       setState(() {
@@ -170,45 +176,62 @@ class _ResidentAppState extends State<ResidentApp> with WidgetsBindingObserver {
   }
 
   void _handleNotificationTap(String? payload) {
-    if (!_isAuthenticated) return;
+    if (payload == null || payload.trim().isEmpty) {
+      return;
+    }
+
+    if (!_isAuthenticated || ResidentApp.navigatorKey.currentState == null) {
+      _pendingNotificationPayload = payload;
+      _flushPendingNotificationTap();
+      return;
+    }
+
     ResidentApp.navigatorKey.currentState?.push(
       MaterialPageRoute<void>(
-        builder: (_) => _pageForNotificationPayload(payload),
+        builder: (_) => NotificationTapRouter.buildPage(
+          role: _currentRole,
+          payload: payload,
+        ),
       ),
     );
   }
 
-  Widget _pageForNotificationPayload(String? payload) {
-    if (payload == null || payload.trim().isEmpty) {
-      return const NotificationsPage();
+  void _flushPendingNotificationTap() {
+    if (_isOpeningPendingNotification) {
+      return;
     }
-    try {
-      final Object? decoded = jsonDecode(payload);
-      if (decoded is! Map<String, dynamic>) {
-        unawaited(
-          NotificationAnalytics.track('notification_deep_link_failed'),
-        );
-        return const NotificationsPage();
+    if (!_isAuthenticated || _pendingNotificationPayload == null) {
+      return;
+    }
+    if (ResidentApp.navigatorKey.currentState == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _flushPendingNotificationTap();
+        }
+      });
+      return;
+    }
+
+    _isOpeningPendingNotification = true;
+    final String payload = _pendingNotificationPayload!;
+    _pendingNotificationPayload = null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        _isOpeningPendingNotification = false;
+        return;
       }
-      final String screen = '${decoded['screen'] ?? ''}'.trim();
-      return switch (screen) {
-        'property_enquiry_detail' => const PropertyEnquiriesPage(),
-        'booking_detail' ||
-        'tenant_booking_detail' =>
-          const PropertyBookingsPage(),
-        'announcement_detail' => const NotificationsPage(),
-        'support_ticket_detail' => const NotificationsPage(),
-        'bill_detail' || 'payment_history' => const NotificationsPage(),
-        'agreement_detail' => const NotificationsPage(),
-        'wallet_detail' || 'settings' => const NotificationsPage(),
-        _ => const NotificationsPage(),
-      };
-    } catch (_) {
-      unawaited(
-        NotificationAnalytics.track('notification_deep_link_failed'),
+
+      ResidentApp.navigatorKey.currentState?.push(
+        MaterialPageRoute<void>(
+          builder: (_) => NotificationTapRouter.buildPage(
+            role: _currentRole,
+            payload: payload,
+          ),
+        ),
       );
-      return const NotificationsPage();
-    }
+      _isOpeningPendingNotification = false;
+    });
   }
 
   Future<AppRole> _resolveRole() async {
@@ -238,6 +261,11 @@ class _ResidentAppState extends State<ResidentApp> with WidgetsBindingObserver {
   }
 
   Future<void> _onOtpVerified(bool needsProfile) async {
+    if (AuthStorage.whetherAccountBlockedByAdmin) {
+      await _completeAuthentication();
+      return;
+    }
+
     if (needsProfile) {
       setState(() {
         _needsProfileSetup = true;
@@ -272,12 +300,15 @@ class _ResidentAppState extends State<ResidentApp> with WidgetsBindingObserver {
     setState(() {
       _currentRole = role;
       _isAuthenticated = true;
+      _isAccountBlocked = AuthStorage.whetherAccountBlockedByAdmin;
+      _accountBlockReason = AuthStorage.accountBlockReason;
       _isInitializing = false;
       _needsProfileSetup = false;
       _phoneNumber = null;
       _showLogin = false;
     });
     unawaited(PushNotificationService.syncToken());
+    _flushPendingNotificationTap();
   }
 
   void _logout() {
@@ -285,16 +316,26 @@ class _ResidentAppState extends State<ResidentApp> with WidgetsBindingObserver {
     if (!mounted) return;
     setState(() {
       _isAuthenticated = false;
+      _isAccountBlocked = false;
+      _accountBlockReason = null;
       _phoneNumber = null;
       _needsProfileSetup = false;
       _showLogin = false;
       _currentRole = AppRole.tenant;
     });
+    _pendingNotificationPayload = null;
   }
 
   Widget _buildHome() {
     if (_isInitializing) {
       return StartupSplashPage(step: _startupStep, onRetry: _initApp);
+    }
+
+    if (_isAccountBlocked) {
+      return BlockedAccountPage(
+        reason: _accountBlockReason,
+        onLogout: _logout,
+      );
     }
 
     if (_isAuthenticated) {
